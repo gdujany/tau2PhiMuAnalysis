@@ -1,0 +1,2 @@
+from Bender.Main import *
+dir(cpp.LHCb.Particle)
