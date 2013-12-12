@@ -33,17 +33,26 @@ def makeHistos():
 
     histos['m_KPi'] = TH1D('m_KPi','Combinatorial mass;m_{K^{+}#pi^{-}} [MeV];',100,630,860)
     histos['m_PiK'] = TH1D('m_PiK','Combinatorial mass;m_{#pi^{+}K^{-}} [MeV];',100,630,860)
-    histos['m_KMu_pi'] = TH1D('m_KMu_pi','Combinatorial mass kaon and pion misID as muon;m_{K#pi} [MeV];',100,630,860)
+    histos['m_KPi_fromMu'] = TH1D('m_KPi_fromMu','Combinatorial mass kaon and pion misID as muon;m_{K#pi} [MeV];',100,850,1450)
+    histos['m_KPi_fromMu_noD'] = TH1D('m_KPi_fromMu_noD','Combinatorial mass kaon and pion misID as muon not in the D- peak;m_{K#pi} [MeV];',100,850,1450)
     histos['m_KKPi'] = TH1D('m_KKPi','Combinatorial mass;m_{KK#pi} [MeV];',100,1600,2000)
-    histos['m_KKPi_D-'] = TH1D('m_KKPi_D-','Combinatorial mass, in peak KK#mu;m_{KK#pi} [MeV];',100,1600,2000)
+    histos['m_KKPi_D'] = TH1D('m_KKPi_D','Combinatorial mass, in peak KK#mu;m_{KK#pi} [MeV];',100,1600,2000)
     histos['m_PhiPi'] = TH1D('m_PhiPi','Combinatorial mass;m_{#Phi#pi} [MeV];',100,1600,2000)
-    histos['m_KPiPi'] = TH1D('m_KPiPi','Combinatorial mass;m_{K#pi#pi} [MeV];',100,1600,2000)
+    histos['m_KPiPi_OS'] = TH1D('m_KPiPi_OS','Combinatorial mass;m_{K^{-}#pi^{+}#pi^{-}} [MeV];',100,1050,1950)
+    histos['m_KPiPi_OS_noD'] = TH1D('m_KPiPi_OS_noD','Combinatorial mass not in D- region;m_{K^{-}#pi^{+}#pi^{-}} [MeV];',100,1050,1950)
+    histos['m_KPiPi_SS'] = TH1D('m_KPiPi_SS','Combinatorial mass;m_{K^{+}#pi^{-}#pi^{-}} [MeV];',100,1050,1950)
+    histos['m_KPiPi_SS_noD'] = TH1D('m_KPiPi_SS_noD','Combinatorial mass not in D- region;m_{K^{+}#pi^{-}#pi^{-}} [MeV];',100,1050,1950)
+    histos['m_PiPi'] = TH1D('m_PiPi','Combinatorial mass #pi^{+} from K, #pi^{-} from #mu;m_{#pi^{+}#pi^{-}} [MeV];',100,300,1350)
+    histos['m_PiPi_noD'] = TH1D('m_PiPi_noD','Combinatorial mass #pi^{+} from K, #pi^{-} from #mu, not in D peak;m_{#pi^{+}#pi^{-}} [MeV];',100,300,1350)
+    
 
     histos['Tau_DTF_PROB'] =  TH1D('Tau_DTF_PROB','Probability DecayTreeFitter m_{#Phi} constrained;probability;',100,0,1)
     histos['Tau_DTFTau_PROB'] =  TH1D('Tau_DTFTau_PROB','Probability  DecayTreeFitter m_{#tau} constrained;probability m_{#tau} constrained;',100,0,1)
     histos['Tau_DTF_PROB_SR'] =  TH1D('Tau_DTF_PROB_SR','Probability DecayTreeFitter m_{#Phi} constrained;probability;',100,0,1)
-    histos['Tau_DTFTau_PROB_SR'] =  TH1D('Tau_DTFTau_PROB_SR','Probability  DecayTreeFitter m_{#tau} constrained;probability m_{#tau} constrained;',100,0,1)
+    histos['Tau_DTFTau_PROB_SR'] = TH1D('Tau_DTFTau_PROB_SR','Probability  DecayTreeFitter m_{#tau} constrained;probability m_{#tau} constrained;',100,0,1)
 
+    histos['Mu_ProbNNmu'] = TH1D('Mu_ProbNNmu','Probability to be a #mu;probability to be a #mu;',100,0,1) 
+    histos['Mu_ProbNNpi'] = TH1D('Mu_ProbNNpi','Probability to be a #pi;probability to be a #pi;',100,0,1) 
 
 
     inFile_name = '/afs/cern.ch/user/g/gdujany/work/LHCb/LFV/store/'+sample+'.root'
@@ -53,7 +62,7 @@ def makeHistos():
     tree.SetBranchStatus("*",0)
     branches = ['{0}_{1}'.format(i,j) for i in ('Tau', 'Phi', 'KPlus', 'KMinus', 'Mu') for j in ('M', 'PE', 'PX', 'PY', 'PZ')]
     branches += ['Tau_DTF_{0}_{1}'.format(i, j) for i in ('Tau', 'Phi', 'KPlus', 'KMinus', 'Mu') for j in ('M', 'E', 'PX', 'PY', 'PZ')]
-    branches.extend(['Tau_DTFTau_Phi_M', 'Tau_DTF_PROB', 'Tau_DTFTau_PROB'])
+    branches.extend(['Tau_DTFTau_Phi_M', 'Tau_DTF_PROB', 'Tau_DTFTau_PROB', 'Mu_ProbNNmu', 'Mu_ProbNNpi'])
     for var in branches:
         tree.SetBranchStatus(var,1)
         exec var+' = array("d",[0])'
@@ -112,22 +121,31 @@ def makeHistos():
 
         histos['m_KPi'].Fill((Kp+pi_Km).M())
         histos['m_PiK'].Fill((pi_Kp+Km).M())
-        histos['m_KMu_pi'].Fill((Kp+pi_mu).M()) # K+ and pi- misID as mu-
+        histos['m_KPi_fromMu'].Fill((Kp+pi_mu).M()) # K+ and pi- misID as mu-
         histos['m_KKPi'].Fill((Kp+Km+pi_mu).M())
         histos['m_PhiPi'].Fill((phi+pi_mu).M())
-        histos['m_KPiPi'].Fill((Kp+pi_Km+pi_mu).M())
-        histos['m_KPiPi'].Fill((Km+pi_Kp+pi_mu).M())
+        histos['m_KPiPi_SS'].Fill((Kp+pi_Km+pi_mu).M())
+        histos['m_KPiPi_OS'].Fill((Km+pi_Kp+pi_mu).M())
+        histos['m_PiPi'].Fill((pi_Kp+pi_mu).M())
 
         if Tau_M[0]>1840 and Tau_M[0]< 1870:
-            histos['m_KKPi_D-'].Fill((Kp+Km+pi_mu).M())
+            histos['m_KKPi_D'].Fill((Kp+Km+pi_mu).M())
+        else:
+            histos['m_KPi_fromMu_noD'].Fill((Kp+pi_mu).M()) # K+ and pi- misID as mu-
+            histos['m_KPiPi_SS_noD'].Fill((Kp+pi_Km+pi_mu).M())
+            histos['m_KPiPi_OS_noD'].Fill((Km+pi_Kp+pi_mu).M())
         
 
         histos['Tau_DTF_PROB'].Fill(Tau_DTF_PROB[0])
         histos['Tau_DTFTau_PROB'].Fill(Tau_DTFTau_PROB[0])
 
+        histos['Mu_ProbNNmu'].Fill(Mu_ProbNNmu[0])
+        histos['Mu_ProbNNpi'].Fill(Mu_ProbNNpi[0])
+
         if Tau_M[0] > 1747 and Tau_M[0] < 1807:
             histos['Tau_DTF_PROB_SR'].Fill(Tau_DTF_PROB[0])
             histos['Tau_DTFTau_PROB_SR'].Fill(Tau_DTFTau_PROB[0])
+            histos['m_PiPi_noD'].Fill((pi_Kp+pi_mu).M())
 
 
     outFile = TFile('histos_'+sample+'.root','RECREATE')
@@ -142,7 +160,7 @@ def setPlotAttributes(graph, color = ROOT.kBlue, markerStyle = 20):
     graph.SetMarkerColor(color)
     graph.SetLineColor(color)
 
-def drawMultiPlot(outFile_name='plots.pdf',title='', plot_name='',squarePad=False ,logy=False, **h_dict):
+def drawMultiPlot(outFile_name='plots.pdf',title='', plot_name='',logy=False, squarePad=False, **h_dict):
     hs = THStack('hs',title)
     leg = TLegend(.80, 0.83, .97, .96,"")
     if squarePad:
@@ -202,10 +220,18 @@ def makePlots():
     drawMultiPlot(outFile_name, ';m_{KK#pi} [MeV];', 'm_KKPi',
                   **{'m_{KK#pi}' : histos['m_KKPi'],
                      'm_{#Phi#pi}' : histos['m_PhiPi']})
+
+    # m_KPiPi_SS and KPiPi_OS
+    drawMultiPlot(outFile_name, ';m_{K#pi#pi} [MeV];', 'm_KPiPi',
+                  **{'m_{K^{+}#pi^{-}#pi^{-}}' : histos['m_KPiPi_SS'],
+                     'm_{K^{-}#pi^{+}#pi^{-}}' : histos['m_KPiPi_OS']})
+    drawMultiPlot(outFile_name, 'not in D peak;m_{K#pi#pi} [MeV];', 'm_KPiPi_noD',
+                  **{'m_{K^{+}#pi^{-}#pi^{-}}' : histos['m_KPiPi_SS_noD'],
+                     'm_{K^{-}#pi^{+}#pi^{-}}' : histos['m_KPiPi_OS_noD']})
     
  
     #Plot various histos
-    for key in ('Tau_DTF_PROB', 'Tau_DTFTau_PROB'):
+    for key in ('m_PiPi', 'm_PiPi_noD', 'm_KPi_fromMu','m_KPi_fromMu_noD' , 'm_KKPi_D' ,'Tau_DTF_PROB', 'Tau_DTFTau_PROB'):
         histos[key].Draw()
         c1.Update()  
         c1.Print(outFile_name)
@@ -291,7 +317,12 @@ def makeComparePlots():
         for key in histoFile[sample].GetListOfKeys():
             histos[key.GetName()] = histoFile[sample].Get(key.GetName())
         histos2[sample] = histos
-        
+        histos['m_KPiPi'] = histos['m_KPiPi_OS'].Clone()
+        histos['m_KPiPi'].SetNameTitle('m_KPiPi','Combinatorial mass;m_{K#pi#pi} [MeV];')
+        histos['m_KPiPi'].Add(histos['m_KPiPi_SS'])
+        histos['m_KPiPi_noD'] = histos['m_KPiPi_OS_noD'].Clone()
+        histos['m_KPiPi_noD'].SetNameTitle('m_KPiPi_noD','Combinatorial mass, no D peak;m_{K#pi#pi} [MeV];')
+        histos['m_KPiPi_noD'].Add(histos['m_KPiPi_SS_noD'])
 
     outFile_name = 'plots_comparison.pdf'
     c1 = TCanvas('c1', 'c1')
@@ -308,13 +339,19 @@ def makeComparePlots():
                         m_Phi = ('Phi mass;m_{#Phi [MeV]};', 'm_phi'),
                         m_Tau = ('Tau mass;m_{#tau [MeV]};', 'm_tau'),
                         m_KPi = ('Combinatorial mass;m_{K^{+}#pi^{-}} [MeV];', 'm_KPi'),
-                        m_PhiPi = ('Combinatorial mass;m_{K^{+}#pi^{-}} [MeV];', 'm_PhiPi'),                       
+                        m_PhiPi = ('Combinatorial mass;m_{#Phi#pi} [MeV];', 'm_PhiPi'),
+                        m_KPi_fromMu = ('Combinatorial mass;m_{K^{+}#pi^{-}} #mu misID as #pi [MeV];', 'm_KPi_fromMu'),
+                        m_KPi_fromMu_noD = ('Combinatorial mass no D peak;m_{K^{+}#pi^{-}} #mu misID as #pi [MeV];', 'm_KPi_fromMu_noD'),
+                        m_KPiPi = ('Combinatorial mass;m_{K#pi#pi} [MeV];', 'm_KPiPi'),
+                        m_KPiPi_noD = ('Combinatorial mass no D peak;m_{K#pi#pi} [MeV];', 'm_KPiPi_noD'),
+                        Mu_ProbNNmu = ('Mu_ProbNNmu','Probability to be a #mu;probability to be a #mu;'), 
+                        Mu_ProbNNpi = ('Mu_ProbNNpi','Probability to be a #pi;probability to be a #pi;'),
                         )
 
-    isLogY = {key: key in ('Tau_DTF_PROB', 'Tau_DTFTau_PROB', 'Tau_DTF_PROB_SR', 'Tau_DTFTau_PROB_SR') for key in compare_dict.keys()}
+    isLogY = {key: key in ('Tau_DTF_PROB', 'Tau_DTFTau_PROB', 'Tau_DTF_PROB_SR', 'Tau_DTFTau_PROB_SR', 'Mu_ProbNNmu', 'Mu_ProbNNpi') for key in compare_dict.keys()}
 
     for key, (title, name) in compare_dict.items():
-        drawMultiPlot(outFile_name, title, name, isLogY[key], isLogY[key],
+        drawMultiPlot(outFile_name, title, name, isLogY[key], #isLogY[key],
                       **{'signal' : histos2['tau2PhiMuFromPDs'][key],
                          'background' : histos2['data2012'][key]})
     
@@ -333,4 +370,4 @@ if __name__ == '__main__':
         #makeHistos()
         makePlots()
     sample = 'compare'
-    #makeComparePlots()
+    makeComparePlots()
