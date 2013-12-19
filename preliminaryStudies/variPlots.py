@@ -235,15 +235,15 @@ def makePlots():
         histos[key].Draw()
         c1.Update()  
         c1.Print(outFile_name)
+        c1.Print('plots/'+sample+'/'+key+'.pdf')
 
-
+    from ROOT import RooFit, RooRealVar, RooDataHist, RooArgList
 
     # Fit m_DTF_Phi
     gStyle.SetOptFit(1111)
     histo = histos['m_DTF_Phi']
 
-    from ROOT import RooFit, RooRealVar, RooDataHist, RooArgList
-    x = RooRealVar('x', 'm_{#Phi} [MeV]', 1008,1032)
+    x = RooRealVar('x', 'm_{#Phi}', 1008,1032,'MeV')
     ral = RooArgList(x)
     dh = RooDataHist ("dh","dh",ral,RooFit.Import(histo))
     frame = x.frame(RooFit.Title('Mass Decay Tree Fitter m_{#Phi} constrained'))
@@ -271,6 +271,41 @@ def makePlots():
     
     frame.Draw()
     c1.Update()  
+    c1.Print(outFile_name)
+
+    # Fit m_Kpipi
+    histo = histos['m_KPiPi_SS_noD']
+    x = RooRealVar('x', 'm_{K#pi#pi}', 1100,1900,'MeV')
+    ral = RooArgList(x)
+    dh = RooDataHist ("dh","dh",ral,RooFit.Import(histo))
+    frame = x.frame(RooFit.Title('Combinatorial mass not in D- region'))
+    dh.plotOn(frame)
+    
+    mean = RooRealVar("mean","mean",1510,1100,1900) 
+    sigma = RooRealVar("sigma","sigma",107,0.1,300)
+    alpha = RooRealVar('alpha', 'alpha', 1, 0.1, 10)
+    param_n = RooRealVar('param_n','param_n', 2, 0.1, 10)
+    #pdf = ROOT.RooGaussian("gauss","gauss",x,mean,sigma)
+    pdf = ROOT.RooCBShape('CB','CB', x, mean, sigma, alpha, param_n)
+   
+
+    fit_region = x.setRange("fit_region",1100,1900)
+    pdf.fitTo(dh, RooFit.Range("fit_region"))
+    pdf.paramOn(frame, RooFit.Layout(0.1,0.44,0.9))
+    pdf.plotOn(frame)
+    chi2 = round(frame.chiSquare(),2)
+    leg = TLegend(0.3,0,.10,.10)
+    leg.SetBorderSize(0)
+    leg.SetFillStyle(0)
+    leg.AddEntry(0,'#chi^{2} ='+str(chi2),'')
+    frame.addObject(leg)
+    frame.Draw()
+    c1.Update()
+    c1.Print(outFile_name)
+
+    histo.Fit('gaus')
+    histo.Draw()
+    c1.Update()
     c1.Print(outFile_name)
 
 
@@ -344,8 +379,8 @@ def makeComparePlots():
                         m_KPi_fromMu_noD = ('Combinatorial mass no D peak;m_{K^{+}#pi^{-}} #mu misID as #pi [MeV];', 'm_KPi_fromMu_noD'),
                         m_KPiPi = ('Combinatorial mass;m_{K#pi#pi} [MeV];', 'm_KPiPi'),
                         m_KPiPi_noD = ('Combinatorial mass no D peak;m_{K#pi#pi} [MeV];', 'm_KPiPi_noD'),
-                        Mu_ProbNNmu = ('Mu_ProbNNmu','Probability to be a #mu;probability to be a #mu;'), 
-                        Mu_ProbNNpi = ('Mu_ProbNNpi','Probability to be a #pi;probability to be a #pi;'),
+                        Mu_ProbNNmu = ('Probability to be a #mu;probability to be a #mu;','Mu_ProbNNmu'), 
+                        Mu_ProbNNpi = ('Probability to be a #pi;probability to be a #pi;','Mu_ProbNNpi'),
                         )
 
     isLogY = {key: key in ('Tau_DTF_PROB', 'Tau_DTFTau_PROB', 'Tau_DTF_PROB_SR', 'Tau_DTFTau_PROB_SR', 'Mu_ProbNNmu', 'Mu_ProbNNpi') for key in compare_dict.keys()}

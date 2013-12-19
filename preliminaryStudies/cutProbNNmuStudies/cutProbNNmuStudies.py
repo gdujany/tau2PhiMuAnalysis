@@ -45,7 +45,7 @@ def makeHistos():
             # Fill Histos
             histos[key].Fill(Tau_M[0], Mu_ProbNNmu[0])
                 
-    outFile = TFile('histos.root','RECREATE')
+    outFile = TFile('histos.root','RECREATE') 
     for histo in histos.values():
         histo.Write()
     outFile.Close()
@@ -53,9 +53,9 @@ def makeHistos():
         file.Close()
 
 
-colori=[ROOT.kBlue, ROOT.kRed, ROOT.kGreen+2, ROOT.kMagenta+1, ROOT.kOrange-3, ROOT.kYellow, ROOT.kCyan]
-markersA=[20,21,22,23,29,33,34]
-markersC=[24,25,26,32,30,27,28]
+colori=[ROOT.kBlue, ROOT.kRed, ROOT.kGreen+2, ROOT.kMagenta+1, ROOT.kOrange-3, ROOT.kYellow, ROOT.kCyan, ROOT.kBlack]
+markersA=[20,21,22,23,29,33,34,8]
+markersC=[24,25,26,32,30,27,28,4]
 
 def setPlotAttributes(graph, color = ROOT.kBlue, markerStyle = 20):
     graph.SetMarkerStyle(markerStyle)
@@ -82,7 +82,7 @@ def drawMultiPlot(outFile_name='plots.pdf',title='', plot_name='',logy=False, sq
     leg.SetFillColor(0)
     c2.Update()  
     c2.Print(outFile_name)
-    #c2.Print('plots/'+sample+'/'+plot_name+'.pdf')
+    c2.Print('plotsCutProbNNmu/'+plot_name+'.pdf')
     return c2
 
 
@@ -163,28 +163,86 @@ def makePlots():
             SoverSqrtB = '(S/#sqrt{B}) / (S_{0}/#sqrt{B_{0}})',
             sig = 'S/S_{0}',
             bkg = 'B/B_{0}',
+            sqrtB = '#sqrt{B}/#sqrt{B_{0}}',
             )
         region_label = '' if region=='' else ' SR'
         return func_label[func]+region_label
-            
+
+
+    formula = ' p0 e^{p2 x^{p3}} - x^{p4}'
     # Make TGraphs
     graphs = {}
+    cuts = cuts[1:]
     x = array('d',cuts)
     s_x = array('d',[0 for i in cuts])
     for region, dd in zip(('','_SR'),(merit, merit_SR)):
         for func in ('SoverB', 'SoverSqrtB','sig','bkg'):
             y = array('d', [getattr(dd[cut],func) for cut in cuts])
             s_y = array('d', [getattr(dd[cut],'s_'+func) for cut in cuts])
-            graphs[graph_labels(func, region)] = TGraphErrors(len(x),x,y,s_x,s_y)
-
+            graphs[func+region] = TGraphErrors(len(x),x,y,s_x,s_y)
+            graphs[func+region].SetNameTitle(func+region,graph_labels(func, region)+formula+';probNNmu > X;'+graph_labels(func, region).split('SR')[0])
+        # sqrt(B)
+        func = 'sqrtB'
+        y = array('d', [sqrt(dd[cut].bkg) for cut in cuts])
+        s_y = array('d', [dd[cut].s_bkg/(2 * sqrt(dd[cut].bkg)) for cut in cuts])
+        graphs['sqrtB'+region] = TGraphErrors(len(x),x,y,s_x,s_y) 
+        graphs['sqrtB'+region].SetNameTitle(func+region,graph_labels(func, region)+formula+';probNNmu > X;'+graph_labels(func, region).split('SR')[0])
     
 
     outFile_name = 'plots.pdf'
     c1 = TCanvas('c1', 'c1')
     c1.Print(outFile_name+'[')
 
-    print len(graphs)
-    drawMultiPlot(outFile_name,'title', 'plotName',logy=False, squarePad=False, **graphs)
+    drawMultiPlot(outFile_name,'Figures of merit;probNNmu > X;', 'figOfMerit',logy=False, squarePad=False,
+                       **{graph_labels(func,region):graphs[func+region] for func in ('SoverB', 'SoverSqrtB') for region in ('','_SR')})
+    #print c2
+    #c2.SaveAs('a.pdf')
+    drawMultiPlot(outFile_name,'Signal or background yields normalized;probNNmu > X;', 'yields',logy=False, squarePad=False,
+                       **{graph_labels(func,region):graphs[func+region] for func in ('sig', 'bkg','sqrtB') for region in ('','_SR')})
+
+    # fit
+    gStyle.SetOptFit(1111)
+    
+    myfun = TF1('myfun', '[0]*TMath::Exp(-[2]*x^[3])-[1]*x^[4]', 0,1)
+    myfun.SetParameters(1,1,1,1,1)
+
+    
+    graphs_fitParams = {}
+    x = array('d', range(5))
+    s_x = array('d', [0 for i in range(5)])
+    for key in ('sig', 'sig_SR', 'bkg', 'bkg_SR', 'sqrtB', 'sqrtB_SR'):
+        graphs[key].Fit('myfun')
+        graphs[key].Draw('ap')
+        c1.Update()
+        c1.Print(outFile_name)
+        c1.Print('plotsCutProbNNmu/'+key+'.pdf')
+
+        y = graphs[key].GetFunction('myfun').GetParameters()
+        s_y = graphs[key].GetFunction('myfun').GetParErrors()
+        #y = array('d',graphs[key].GetFunction('myfun').GetParameters())
+        #s_y = array('d',graphs[key].GetFunction('myfun').GetParErrors())
+        graphs_fitParams[key] = TGraphErrors(len(x),x,y,s_x,s_y)
+
+    drawMultiPlot(outFile_name,'Fit parameters;parameter number;', 'fitParams',logy=False, squarePad=False,
+                  **{graph_labels(key.split('_')[0],'SR' if 'SR' in key else ''):graphs_fitParams[key] for key in graphs_fitParams.keys()})
+
+    # Fit parameters difference wrt sig (S/S_0)
+    graphs_fitParams2 = {}
+    fitParams = {}
+    s_fitParams = {}
+    for key in ('sig', 'sig_SR', 'bkg', 'bkg_SR', 'sqrtB', 'sqrtB_SR'):
+        fitParams[key] = [graphs_fitParams[key].GetY()[i] for i in range(graphs_fitParams['sig'].GetN())]
+        s_fitParams[key] = [graphs_fitParams[key].GetErrorY(i) for i in range(graphs_fitParams['sig'].GetN())]
+           
+    for key in ('sig', 'sig_SR', 'bkg', 'bkg_SR', 'sqrtB', 'sqrtB_SR'):
+    
+    
+        y = array('d',[(i-j) for i, j in zip(fitParams[key],fitParams['sig'])])
+        s_y = array('d',[s_i for s_i, j in zip(s_fitParams[key],fitParams['sig'])])
+        graphs_fitParams2[key] = TGraphErrors(len(x),x,y,s_x,s_y)
+
+    drawMultiPlot(outFile_name,'Fit parameters difference wrt S/S_{0};parameter number;', 'firParamsNorm',logy=False, squarePad=False,
+                  **{graph_labels(key.split('_')[0],'SR' if 'SR' in key else ''):graphs_fitParams2[key] for key in graphs_fitParams2.keys()})
     
     c1.Print(outFile_name+']')
 
