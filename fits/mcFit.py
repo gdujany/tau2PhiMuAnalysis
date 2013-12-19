@@ -1,8 +1,8 @@
 #!/usr/bin/python
 
 from ROOT import gSystem
-gSystem.Load('My_double_CB/My_double_CB_cxx')
-from ROOT import My_double_CB
+gSystem.Load('../PDFs/RooDSCBShape_cxx')
+from ROOT import RooDSCBShape
 from ROOT import RooDataSet, RooRealVar, RooArgSet, RooFormulaVar, RooGenericPdf, RooCmdArg, RooStats
 from ROOT import RooCBShape, RooAddPdf, RooArgList, RooPlot, RooDataHist, RooFitResult, RooAbsPdf, RooGaussian, RooPolynomial, RooExponential, RooChebychev
 from ROOT import RooFit, gROOT, TStyle, gStyle, gPad
@@ -37,7 +37,7 @@ def doMCFit(dataSet):
     signal = ROOT.RooGaussian('signal','signal',x,mean,sigma)
     signal = ROOT.RooBreitWigner('signal','signal',x,mean,gamma)
     signal = ROOT.RooCBShape('CB','CB', x, mean, sigma, alpha, param_n)
-    signal = ROOT.My_double_CB('DSCB','DSCB', x, mean, sigma, alpha, param_n, alpha, param_n)
+    signal = ROOT.RooDSCBShape('DSCB','DSCB', x, mean, sigma, alpha, param_n, alpha, param_n)
     #signal = ROOT.RooGenericPdf('SuperGaus','TMath::Exp(-(@0-@1)^2/(2*@2) - (@0-@1)^4/(4*@3))', RooArgList(x,mean,sigma,gamma))
     #signal = ROOT.RooVoigtian('signal','signal',x,mean,sigma,gamma)
 

@@ -3,13 +3,15 @@
 # sample = 'data2012'
 # sample = 'tau2PhiMuFromPDs'
 
+from ROOT import gSystem
+gSystem.Load('../../PDFs/RooRelBreitWigner_cxx')
 from ROOT import TFile, TH1D
 from ROOT import THStack, TLegend, TCanvas, TF1
 from ROOT import gROOT, gStyle
 import ROOT
 from array import array
 
-m_pi = 139.57018
+m_K = 493.667
 gROOT.SetBatch()
 
 colori=[ROOT.kBlue, ROOT.kRed, ROOT.kGreen+2, ROOT.kMagenta+1, ROOT.kOrange-3, ROOT.kYellow, ROOT.kCyan]
@@ -52,13 +54,15 @@ def makeFit():
     
     # Signal
     mean = RooRealVar("#mu","#mu",1020,1010,1025) 
-    gamma = RooRealVar("#Gamma","#Gamma",3,0.1,10)
-    alpha = RooRealVar('alpha', '#alpha', 1, 0.1, 10)
-    param_n = RooRealVar('param_n','param_n', 2, 0.1, 10)
-    #pdf = ROOT.RooGaussian("gauss","gauss",x,mean,sigma)
-    signal = ROOT.RooBreitWigner('BW','BW',x,mean, gamma)
-    #signal = ROOT.RooVoigtian('voit','voit', x, mean, sigma)
-    #signal = ROOT.RooCBShape('CB','CB', x, mean, sigma, alpha, param_n)
+    gamma = RooRealVar("#Gamma_{0}","#Gamma",3,0.1,10)
+    spin = RooRealVar("J","J",1)
+    radius = RooRealVar("radius","radius",0.003)
+    m_K = 493.677
+    m_a = RooRealVar("m_a","m_a",m_K)
+    m_b = RooRealVar("m_b","m_b",m_K)
+    #signal = ROOT.RooBreitWigner('BW','BW',x,mean, gamma)
+    signal = ROOT.RooRelBreitWigner('BW','BW',x,mean, gamma,spin,radius,m_a,m_b)
+    
 
     # Background
     a1 = RooRealVar('a0','a0',0.,-0.0000001,0.0000001) #,0.5,0.,1.)
