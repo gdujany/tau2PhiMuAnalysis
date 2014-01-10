@@ -2,13 +2,12 @@
 
 from ROOT import gSystem
 gSystem.Load('../PDFs/RooDSCBShape_cxx')
-from ROOT import RooDSCBShape
-from ROOT import RooDataSet, RooRealVar, RooArgSet, RooFormulaVar, RooGenericPdf, RooCmdArg, RooStats
-from ROOT import RooCBShape, RooAddPdf, RooArgList, RooPlot, RooDataHist, RooFitResult, RooAbsPdf, RooGaussian, RooPolynomial, RooExponential, RooChebychev
+from ROOT import RooDataSet, RooRealVar, RooArgSet, RooFormulaVar, RooGenericPdf, RooCmdArg, RooStats, RooWorkspace
+from ROOT import RooCBShape, RooAddPdf, RooArgList, RooPlot, RooDataHist, RooFitResult, RooAbsPdf, RooGaussian, RooPolynomial, RooExponential, RooChebychev, RooDSCBShape
 from ROOT import RooFit, gROOT, TStyle, gStyle, gPad
 from ROOT import TFile, TCanvas, TPad, TH1F, TGraphErrors, TPad, TLegend, TPaveText, TMultiGraph, TGraphErrors, TMath
 from ROOT import TH1D, TH1F, TTree, RooHistPdf, TLine, TF1
-import ROOT, sys, getopt
+import ROOT, sys, getopt, pickle 
 from array import array
 from pyUtils import *
 
@@ -22,6 +21,7 @@ def doMCFit(dataSet):
     data = dataSet.reduce( RooFit.Cut(cuts_str) )
 
     x=RooRealVar(x_var, 'm_{#tau}',1757,1797,'MeV')
+    x.Print()
     numBins = 100 # define here so that if I change it also the ndof change accordingly
     x.setBins(numBins)
 
@@ -34,10 +34,13 @@ def doMCFit(dataSet):
     gamma = RooRealVar('#Gamma','gamma',5,0,10)
     alpha = RooRealVar('#alpha', 'alpha', 1.5)#, 0.1, 10)
     param_n = RooRealVar('n','param_n', 10, 0.1, 100)
-    signal = ROOT.RooGaussian('signal','signal',x,mean,sigma)
-    signal = ROOT.RooBreitWigner('signal','signal',x,mean,gamma)
-    signal = ROOT.RooCBShape('CB','CB', x, mean, sigma, alpha, param_n)
+    # signal = ROOT.RooGaussian('signal','signal',x,mean,sigma)
+    # signal = ROOT.RooBreitWigner('signal','signal',x,mean,gamma)
+    # signal = ROOT.RooCBShape('CB','CB', x, mean, sigma, alpha, param_n)
     signal = ROOT.RooDSCBShape('DSCB','DSCB', x, mean, sigma, alpha, param_n, alpha, param_n)
+    
+
+    
     #signal = ROOT.RooGenericPdf('SuperGaus','TMath::Exp(-(@0-@1)^2/(2*@2) - (@0-@1)^4/(4*@3))', RooArgList(x,mean,sigma,gamma))
     #signal = ROOT.RooVoigtian('signal','signal',x,mean,sigma,gamma)
 
@@ -48,7 +51,17 @@ def doMCFit(dataSet):
     # pdf_list = RooArgList(gaus1, gaus2)
     # ratio_list = RooArgList(ratio_12)
     # signal = RooAddPdf('ModelPdf', 'ModelPdf', pdf_list, ratio_list)
-    
+
+    # #try the same with workspace
+    # w = RooWorkspace('w')
+    # getattr(w,'import')(x)
+    # w.factory('''RooDSCBShape::DSCB('''+x_var+''',
+    # #mu[1777, 1760,1790],
+    # #sigma[5,0,10],
+    # #alpha[1.5], n[10, 0.1, 100],
+    # #alpha, n)''')
+    # signal = w.pdf('DSCB')
+        
 
     # Fit
     fit_region = x.setRange('fit_region',1757,1797)
@@ -72,17 +85,26 @@ def doMCFit(dataSet):
 
     c1 = TCanvas('c1', 'c1')
     frame.Draw()
-    c1.Update()  
-    c1.Print('plotMCFit.pdf')
+    c1.Update()
+
+    for var in (mean, sigma, alpha, param_n):
+        var.setConstant()
+    
+    pickle.dump(signal,open('pickles/pdf.pkl','wb'))
+    return signal, c1
+    
 
 
 if __name__ == '__main__':
 
     # # Make Dataset
     # dataSet = makeRooDataset('/afs/cern.ch/work/g/gdujany/LHCb/LFV/store/tau2PhiMuFromPDs.root')
-    # dataSet.SaveAs('rooDataSet_MC.root'); 
+    # dataSet.SaveAs('rooDataSet_MC.root')
+    
 
     # Make fit
     inFile = TFile('rooDataSet_MC.root')
     dataSet = inFile.Get('taus')
-    doMCFit(dataSet)
+    pdf, c1 = doMCFit(dataSet)
+    c1.Print('plotMCFit.pdf')
+    # pickle.dump(pdf,open('pickles/pdf.pkl','wb'))

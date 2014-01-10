@@ -65,7 +65,7 @@ def setPlotAttributes(graph, color = ROOT.kBlue, markerStyle = 20):
 def drawMultiPlot(outFile_name='plots.pdf',title='', plot_name='',logy=False, squarePad=False, **h_dict):
     #hs = THStack('hs',title)
     hs = TMultiGraph('hs',title)
-    leg = TLegend(.80, 0.83, .97, .96,"")
+    leg = TLegend(.80, 0.80, .99, .99,"")
     if squarePad:
         c2 = TCanvas('c2', 'c2',700,700)
     else:
@@ -108,6 +108,14 @@ class SigBkg:
     @property
     def s_SoverSqrtB(self):
         return self.SoverSqrtB * sqrt( (self.s_sig/self.sig)**2 + 0.25*(self.s_bkg/self.bkg)**2 )
+
+    @property
+    def Punzi(self):
+        return self.sig/(1+sqrt(self.bkg))
+
+    @property
+    def s_Punzi(self):
+        return self.Punzi * sqrt( (self.s_sig/self.sig)**2 + (1/(4*self.bkg)*(self.s_bkg/(1+self.bkg))**2 ) )
 
 
 def makePlots():
@@ -161,6 +169,7 @@ def makePlots():
         func_label = dict(
             SoverB = '(S/B) / (S_{0}/B_{0})',
             SoverSqrtB = '(S/#sqrt{B}) / (S_{0}/#sqrt{B_{0}})',
+            Punzi = '(S/S_{0})/(1+#sqrt{B}/#sqrt{B_{0}})', 
             sig = 'S/S_{0}',
             bkg = 'B/B_{0}',
             sqrtB = '#sqrt{B}/#sqrt{B_{0}}',
@@ -176,7 +185,7 @@ def makePlots():
     x = array('d',cuts)
     s_x = array('d',[0 for i in cuts])
     for region, dd in zip(('','_SR'),(merit, merit_SR)):
-        for func in ('SoverB', 'SoverSqrtB','sig','bkg'):
+        for func in ('SoverB', 'SoverSqrtB', 'Punzi', 'sig','bkg'):
             y = array('d', [getattr(dd[cut],func) for cut in cuts])
             s_y = array('d', [getattr(dd[cut],'s_'+func) for cut in cuts])
             graphs[func+region] = TGraphErrors(len(x),x,y,s_x,s_y)
@@ -194,7 +203,7 @@ def makePlots():
     c1.Print(outFile_name+'[')
 
     drawMultiPlot(outFile_name,'Figures of merit;probNNmu > X;', 'figOfMerit',logy=False, squarePad=False,
-                       **{graph_labels(func,region):graphs[func+region] for func in ('SoverB', 'SoverSqrtB') for region in ('','_SR')})
+                       **{graph_labels(func,region):graphs[func+region] for func in ('SoverB', 'SoverSqrtB', 'Punzi') for region in ('','_SR')})
     #print c2
     #c2.SaveAs('a.pdf')
     drawMultiPlot(outFile_name,'Signal or background yields normalized;probNNmu > X;', 'yields',logy=False, squarePad=False,

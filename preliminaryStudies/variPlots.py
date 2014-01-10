@@ -52,7 +52,9 @@ def makeHistos():
     histos['Tau_DTFTau_PROB_SR'] = TH1D('Tau_DTFTau_PROB_SR','Probability  DecayTreeFitter m_{#tau} constrained;probability m_{#tau} constrained;',100,0,1)
 
     histos['Mu_ProbNNmu'] = TH1D('Mu_ProbNNmu','Probability to be a #mu;probability to be a #mu;',100,0,1) 
-    histos['Mu_ProbNNpi'] = TH1D('Mu_ProbNNpi','Probability to be a #pi;probability to be a #pi;',100,0,1) 
+    histos['Mu_ProbNNpi'] = TH1D('Mu_ProbNNpi','Probability to be a #pi;probability to be a #pi;',100,0,1)
+    histos['Mu_ProbNNmu_SR'] = TH1D('Mu_ProbNNmu_SR','Probability to be a #mu SR;probability to be a #mu;',100,0,1) 
+    histos['Mu_ProbNNpi_SR'] = TH1D('Mu_ProbNNpi_SR','Probability to be a #pi SR;probability to be a #pi;',100,0,1) 
 
 
     inFile_name = '/afs/cern.ch/user/g/gdujany/work/LHCb/LFV/store/'+sample+'.root'
@@ -134,6 +136,7 @@ def makeHistos():
             histos['m_KPi_fromMu_noD'].Fill((Kp+pi_mu).M()) # K+ and pi- misID as mu-
             histos['m_KPiPi_SS_noD'].Fill((Kp+pi_Km+pi_mu).M())
             histos['m_KPiPi_OS_noD'].Fill((Km+pi_Kp+pi_mu).M())
+            histos['m_PiPi_noD'].Fill((pi_Kp+pi_mu).M())
         
 
         histos['Tau_DTF_PROB'].Fill(Tau_DTF_PROB[0])
@@ -145,7 +148,8 @@ def makeHistos():
         if Tau_M[0] > 1747 and Tau_M[0] < 1807:
             histos['Tau_DTF_PROB_SR'].Fill(Tau_DTF_PROB[0])
             histos['Tau_DTFTau_PROB_SR'].Fill(Tau_DTFTau_PROB[0])
-            histos['m_PiPi_noD'].Fill((pi_Kp+pi_mu).M())
+            histos['Mu_ProbNNmu_SR'].Fill(Mu_ProbNNmu[0])
+            histos['Mu_ProbNNpi_SR'].Fill(Mu_ProbNNpi[0])
 
 
     outFile = TFile('histos_'+sample+'.root','RECREATE')
@@ -381,9 +385,11 @@ def makeComparePlots():
                         m_KPiPi_noD = ('Combinatorial mass no D peak;m_{K#pi#pi} [MeV];', 'm_KPiPi_noD'),
                         Mu_ProbNNmu = ('Probability to be a #mu;probability to be a #mu;','Mu_ProbNNmu'), 
                         Mu_ProbNNpi = ('Probability to be a #pi;probability to be a #pi;','Mu_ProbNNpi'),
+                        Mu_ProbNNmu_SR = ('Probability to be a #mu SR;probability to be a #mu;','Mu_ProbNNmu_SR'), 
+                        Mu_ProbNNpi_SR = ('Probability to be a #pi SR;probability to be a #pi;','Mu_ProbNNpi_SR'),
                         )
 
-    isLogY = {key: key in ('Tau_DTF_PROB', 'Tau_DTFTau_PROB', 'Tau_DTF_PROB_SR', 'Tau_DTFTau_PROB_SR', 'Mu_ProbNNmu', 'Mu_ProbNNpi') for key in compare_dict.keys()}
+    isLogY = {key: key in ('Tau_DTF_PROB', 'Tau_DTFTau_PROB', 'Tau_DTF_PROB_SR', 'Tau_DTFTau_PROB_SR', 'Mu_ProbNNmu', 'Mu_ProbNNpi', 'Mu_ProbNNmu_SR', 'Mu_ProbNNpi_SR') for key in compare_dict.keys()}
 
     for key, (title, name) in compare_dict.items():
         drawMultiPlot(outFile_name, title, name, isLogY[key], #isLogY[key],
@@ -402,7 +408,7 @@ if __name__ == '__main__':
     
     
     for sample in ('data2012', 'tau2PhiMuFromPDs'):
-        #makeHistos()
+        makeHistos()
         makePlots()
     sample = 'compare'
     makeComparePlots()

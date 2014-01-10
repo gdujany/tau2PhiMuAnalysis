@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
-# sample = 'data2012'
-# sample = 'tau2PhiMuFromPDs'
+sample = 'data2012'
+#sample = 'tau2PhiMuFromPDs'
 
 from ROOT import gSystem
 gSystem.Load('../../PDFs/RooRelBreitWigner_cxx')
@@ -16,10 +16,10 @@ gROOT.SetBatch()
 
 colori=[ROOT.kBlue, ROOT.kRed, ROOT.kGreen+2, ROOT.kMagenta+1, ROOT.kOrange-3, ROOT.kYellow, ROOT.kCyan]
 
-from ROOT import RooFit, RooRealVar, RooDataHist, RooArgList, RooDataSet, RooArgSet, RooChebychev, RooAddPdf, RooPolynomial, RooExponential
+from ROOT import RooFit, RooRealVar, RooDataHist, RooArgList, RooDataSet, RooArgSet, RooChebychev, RooAddPdf, RooPolynomial, RooExponential, RooFormulaVar
 
 def makeRooDataset():
-    inFile_name = '/afs/cern.ch/user/g/gdujany/work/LHCb/LFV/store/data2012.root'
+    inFile_name = '/afs/cern.ch/user/g/gdujany/work/LHCb/LFV/store/'+sample+'.root'
     inFile = TFile(inFile_name)
     tree = inFile.Get('DecayTreeTuple/DecayTree')
    
@@ -29,7 +29,7 @@ def makeRooDataset():
     dataArgSet = RooArgSet(Phi_M, Tau_DTF_Phi_M)
     print 'Making a dataset from file', inFile_name
     dataSet = RooDataSet("phi_mass_dataset","phi_mass_dataset", tree, dataArgSet)
-    dataSet.SaveAs('rooDataSet.root')
+    dataSet.SaveAs('rooDataSet_'+sample+'.root')
     return dataSet
 
 
@@ -37,14 +37,14 @@ def makeRooDataset():
     
 def makeFit():
 
-    inFile = TFile('rooDataSet.root')
+    inFile = TFile('rooDataSet_'+sample+'.root')
     dataSet = inFile.Get('phi_mass_dataset')
     
     # Fit m_DTF_Phi
     gStyle.SetOptFit(1111)
     #histo = histos['m_DTF_Phi']
-    x_var = 'Tau_DTF_Phi_M' #'Phi_M'
-    #x_var = 'Phi_M'
+    #x_var = 'Tau_DTF_Phi_M' #'Phi_M'
+    x_var = 'Phi_M'
     x = RooRealVar(x_var, 'm_{#Phi}', 1008,1032, 'MeV')
     #x = RooRealVar(x_var, 'm_{#Phi}', 1010,1027, 'MeV')
     x.setBins(200)
@@ -56,21 +56,20 @@ def makeFit():
     mean = RooRealVar("#mu","#mu",1020,1010,1025) 
     gamma = RooRealVar("#Gamma_{0}","#Gamma",3,0.1,10)
     spin = RooRealVar("J","J",1)
-    radius = RooRealVar("radius","radius",0.003)
-    m_K = 493.677
-    m_a = RooRealVar("m_a","m_a",m_K)
-    m_b = RooRealVar("m_b","m_b",m_K)
+    radius = RooRealVar("radius","radius",0.003)#, 0, 0.01)
+    m_K = RooRealVar("m_K","m_K", 493.677)
     #signal = ROOT.RooBreitWigner('BW','BW',x,mean, gamma)
-    signal = ROOT.RooRelBreitWigner('BW','BW',x,mean, gamma,spin,radius,m_a,m_b)
+    signal = ROOT.RooRelBreitWigner('BW','BW',x,mean, gamma,spin,radius,m_K,m_K)
     
 
     # Background
-    a1 = RooRealVar('a0','a0',0.,-0.0000001,0.0000001) #,0.5,0.,1.)
+    a1 = RooRealVar('a0','a0',0.1,0.,1.)
     #a2 = RooRealVar('a1','a1',0.1,-1.,1.) #-0.2,0.,1.)
     #a3 = RooRealVar('a2','a2',-0.1,1.,-1.)
     esp = RooRealVar('esp','esp',0.,-0.5,0.5) #,0.5,0.,1.)
-    #background = RooChebychev('background','Background',x,RooArgList(a1))
-    #background = RooPolynomial('background','Background',x,RooArgList(a1))
+    xm = RooFormulaVar('xm','@0-1010',RooArgList(x))
+    #background = RooPolynomial('background','Background',xm,RooArgList(a1))
+    #background = RooPolynomial('background','Background',xm,RooArgList())
     background = RooExponential('background','Background',x,esp)
    
     # Toghether
@@ -78,9 +77,10 @@ def makeFit():
     ratio_SB = RooRealVar("ratio_SB","ratio_SB",0.7, 0, 1)
     ratio_list = RooArgList(ratio_SB)
     modelPdf = RooAddPdf('ModelPdf', 'ModelPdf', pdf_list, ratio_list)
+    #modelPdf = signal
 
     # Fit
-    fit_region = x.setRange("fit_region",1011,1027)
+    fit_region = x.setRange("fit_region",1013,1027)
     result = modelPdf.fitTo(dataSet, RooFit.Save(), RooFit.Range("fit_region"))
 
     # Frame
@@ -142,12 +142,37 @@ def makeFit():
   #  c1.Print(outFile_name+']')
 
 
+def plotPDF():
 
+    gStyle.SetOptFit(1111)
+    x_var = 'Tau_DTF_Phi_M' #'Phi_M'
+    #x_var = 'Phi_M'
+    x = RooRealVar(x_var, 'm_{#Phi}', 1008,1032, 'MeV')
+    x = RooRealVar(x_var, 'm_{#Phi}', 0,10, 'MeV')
+    
+#    mean = RooRealVar("#mu","#mu",1020,1010,1025)
+    mean = RooRealVar("#mu","#mu",5) 
+    gamma = RooRealVar("#Gamma_{0}","#Gamma",3,0.1,10)
+    spin = RooRealVar("J","J",1)
+    radius = RooRealVar("radius","radius",0.003)#, 0, 0.01)
+#    m_K = RooRealVar("m_K","m_K", 493.677)
+    m_K = RooRealVar("m_K","m_K", 0.5)
+    NRBW = ROOT.RooBreitWigner('BW','BW',x,mean, gamma)
+    RBW = ROOT.RooRelBreitWigner('BW','BW',x,mean, gamma,spin,radius,m_K,m_K)
 
+    frame = x.frame(RooFit.Title('Breit Wigner'))
+    NRBW.plotOn(frame, RooFit.LineWidth(2),RooFit.LineColor(ROOT.kRed), RooFit.LineStyle(1))
+    RBW.plotOn(frame, RooFit.LineWidth(2),RooFit.LineColor(ROOT.kBlue), RooFit.LineStyle(2))
+
+    c1 = TCanvas('c1', 'c1')
+    frame.Draw()
+    c1.Update()
+
+    c1.Print('plotPDF.pdf')
 
 
 if __name__ == '__main__':
     
     #makeRooDataset()
     makeFit()
-   
+    #plotPDF()
