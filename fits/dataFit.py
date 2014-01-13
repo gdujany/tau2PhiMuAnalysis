@@ -3,7 +3,7 @@
 from ROOT import gSystem
 gSystem.Load('../PDFs/RooDSCBShape_cxx')
 from ROOT import RooDataSet, RooRealVar, RooArgSet, RooFormulaVar, RooGenericPdf, RooCmdArg, RooStats
-from ROOT import RooCBShape, RooAddPdf, RooArgList, RooPlot, RooDataHist, RooFitResult, RooAbsPdf, RooGaussian, RooPolynomial, RooExponential, RooChebychev, RooDSCBShape
+from ROOT import RooCBShape, RooAddPdf, RooArgList, RooPlot, RooDataHist, RooFitResult, RooAbsPdf, RooGaussian, RooPolynomial, RooExponential, RooChebychev, RooDSCBShape, RooWorkspace
 from ROOT import RooFit, gROOT, TStyle, gStyle, gPad
 from ROOT import TFile, TCanvas, TPad, TH1F, TGraphErrors, TPad, TLegend, TPaveText, TMultiGraph, TGraphErrors, TMath
 from ROOT import TH1D, TH1F, TTree, RooHistPdf, TLine, TF1
@@ -21,10 +21,14 @@ def doDataFit(dataSet):
 
     cuts_str = ''
     data = dataSet.reduce( RooFit.Cut(cuts_str) )
-    #if withD:
-    x=RooRealVar(x_var, 'm_{#tau}',1630,1900,'MeV')
-    #else:
-    #    x=RooRealVar(x_var, 'm_{#tau}',1600,1950,'MeV')
+
+    w = TFile('pickles/w_'+x_var+'.root').Get('w')
+
+    x = w.var(x_var)
+    x.setRange(1630,1900)
+    
+    #x=RooRealVar(x_var, 'm_{#tau}',1630,1900,'MeV')
+    
     numBins = 90#100 # define here so that if I change it also the ndof change accordingly
     x.setBins(numBins)
 
@@ -35,14 +39,6 @@ def doDataFit(dataSet):
     gStyle.SetStatW(0.2) # Set width of stat-box (fraction of pad size)
     gStyle.SetStatH(0.2) # Set height of stat-box (fraction of pad size)
     
-    # # make histogram
-    # x_=RooRealVar(x_var, 'm_{#tau}',1630,1810,'MeV')
-    # print 1
-    # data_h = data.binnedClone()
-    # print 2
-    # histo = data_h.createHistogram(x_var+'_histo', x_)
-    # print 3
-    # histo.SaveAs('histo.root')
 
     c1 = TCanvas('c1', 'c1')
     c1.Print('plotDataFit_linear.pdf[')
@@ -84,49 +80,77 @@ def doDataFit(dataSet):
     # DEFINE PDF
     ######################################################
     # Signal
-    mean = RooRealVar('mean','mean',1777) 
-    sigma = RooRealVar('sigma','sigma',5)
-    signal = ROOT.RooGaussian('signal','signal',x,mean,sigma)
-    #signal = pickle.load(open('pickles/pdf.pkl','rb'))
+    sgn_name = 'DSCB'
+    signal = w.pdf(sgn_name)
+
 
     # Background
     if withD:
-        a1 = RooRealVar('a1','a1',-0.5,-1,1)#16.,0.,100.)# ,0.5,0.,1.)
-        a2 = RooRealVar('a2','a2',-0.1,-1,1)#-0.0075,-10.,10.) #-0.2,0.,1.)
-        a3 = RooRealVar('a3','a3',0.05,-1,1)
-        background = RooChebychev('background','Background',x,RooArgList(a1,a2,a3))
+        w.factory('''RooChebychev::background('''+x_var+''',
+        {a1[-0.5,-1,1],
+        a2[-0.1,-1,1],
+        a3[0.05,-1,1]}
+        )''')
+                
+        # a1 = RooRealVar('a1','a1',-0.5,-1,1)#16.,0.,100.)# ,0.5,0.,1.)
+        # a2 = RooRealVar('a2','a2',-0.1,-1,1)#-0.0075,-10.,10.) #-0.2,0.,1.)
+        # a3 = RooRealVar('a3','a3',0.05,-1,1)
+        # background = RooChebychev('background','Background',x,RooArgList(a1,a2,a3))
     else:
-        a1 = RooRealVar('a1','a1',params2[1],params2[1]*0.5,params2[1]*1.5)#16.,0.,100.)# ,0.5,0.,1.)
-        a2 = RooRealVar('a2','a2',params2[2],params2[2]*0.5,params2[2]*1.5)#-0.0075,-10.,10.) #-0.2,0.,1.)
-        a3 = RooRealVar('a3','a3',params2[3],params2[3]*0.5,params2[3]*1.5)#1,-10.,10.)
-        esp = RooRealVar('esp','esp',0.,-0.5,0.5) #,0.5,0.,1.)
-        background = RooPolynomial('background','Background',x,RooArgList(a1,a2,a3))
+        w.factory('''RooPolynomial::background('''+x_var+''',
+        {a1[params2[1],params2[1]*0.5,params2[1]*1.5],
+        a2[params2[2],params2[2]*0.5,params2[2]*1.5],
+        a3[params2[3],params2[3]*0.5,params2[3]*1.5]}
+        )''')
+        # a1 = RooRealVar('a1','a1',params2[1],params2[1]*0.5,params2[1]*1.5)#16.,0.,100.)# ,0.5,0.,1.)
+        # a2 = RooRealVar('a2','a2',params2[2],params2[2]*0.5,params2[2]*1.5)#-0.0075,-10.,10.) #-0.2,0.,1.)
+        # a3 = RooRealVar('a3','a3',params2[3],params2[3]*0.5,params2[3]*1.5)#1,-10.,10.)
+        # esp = RooRealVar('esp','esp',0.,-0.5,0.5) #,0.5,0.,1.)
+        # background = RooPolynomial('background','Background',x,RooArgList(a1,a2,a3))
+        
     
     #background = RooExponential('background','Background',x,esp)
    
     # Toghether
-    pdf_list = RooArgList(signal, background)   
-    ratio_SB = RooRealVar("ratio_SB","ratio_SB",0.1, 0, 1)
-    n_sig = RooRealVar("n_sig","n_sig",5, 0, 100)
-    n_bkg =  RooRealVar("n_bkg","n_bkg",10000000, 0, 10000000000)
-    #ratio_list = RooArgList(ratio_SB)
-    ratio_list = RooArgList(n_sig, n_bkg)
-    
-    #withD=False
-    # With D peak
-    if withD:
-        mean_D = RooRealVar('mean_D','mean_D',1860,1830,1890) 
-        sigma_D = RooRealVar('sigma_D','sigma_D',7,0,20)
-        alpha_D = RooRealVar('alpha_D','alpha_D',1,0,10)
-        n_D = RooRealVar('n_D','n_D',3)
-        #Dpeak = ROOT.RooGaussian('Dpeak','Dpeak',x,mean_D,sigma_D)
-        Dpeak = ROOT.RooCBShape('Dpeak','Dpeak',x,mean_D,sigma_D,alpha_D,n_D)
-        n_Dpeak = RooRealVar("n_Dpeak","n_Dpeak",100000, 0, 100000000)
-        ratio_list.add(n_Dpeak)
-        pdf_list.add(Dpeak)
 
-    modelPdf = RooAddPdf('ModelPdf', 'ModelPdf', pdf_list, ratio_list)
-        
+    # pdf_list = RooArgList(signal, background)   
+    # ratio_SB = RooRealVar("ratio_SB","ratio_SB",0.1, 0, 1)
+    # n_sig = RooRealVar("n_sig","n_sig",5, 0, 100)
+    # n_bkg =  RooRealVar("n_bkg","n_bkg",10000000, 0, 10000000000)
+    # #ratio_list = RooArgList(ratio_SB)
+    # ratio_list = RooArgList(n_sig, n_bkg)
+    
+    # #withD=False
+    # # With D peak
+    # if withD:
+    #     mean_D = RooRealVar('mean_D','mean_D',1860,1830,1890) 
+    #     sigma_D = RooRealVar('sigma_D','sigma_D',7,0,15)
+    #     alpha_D = RooRealVar('alpha_D','alpha_D',0.5,0,5)
+    #     n_D = RooRealVar('n_D','n_D',3)
+    #     #Dpeak = ROOT.RooGaussian('Dpeak','Dpeak',x,mean_D,sigma_D)
+    #     Dpeak = ROOT.RooCBShape('Dpeak','Dpeak',x,mean_D,sigma_D,alpha_D,n_D)
+    #     n_Dpeak = RooRealVar("n_Dpeak","n_Dpeak",100000, 0, 100000000)
+    #     ratio_list.add(n_Dpeak)
+    #     pdf_list.add(Dpeak)
+
+    # # pdf_list = RooArgList(background, Dpeak)
+    # # ratio_list = RooArgList(n_bkg, n_Dpeak)
+    # modelPdf = RooAddPdf('ModelPdf', 'ModelPdf', pdf_list, ratio_list)
+
+    if withD:
+        w.factory('''RooCBShape::Dpeak({0},
+        mean_D[1860,1830,1890],
+        sigma_D[7,0,15],
+        alpha_D[0.5,0,5],
+        n_D[3]
+        )'''.format(x_var))
+
+    w.factory('''SUM::modelPdf(
+    n_sig[5, 0, 100] * {0},
+    n_bkg[10000000, 0, 10000000000] * background
+    {1})'''.format(sgn_name,
+                ',n_Dpeak[100000, 0, 100000000] * Dpeak' if withD else ''))
+    modelPdf = w.pdf('modelPdf')
         
 
     # Fit
@@ -139,18 +163,22 @@ def doDataFit(dataSet):
     # Frame
     frame = x.frame(RooFit.Title(' Combined mass KK#mu '))
     dataSet.plotOn(frame)
-    signal_set = RooArgSet(signal)
-    modelPdf.plotOn(frame,RooFit.Components(signal_set), RooFit.LineColor(ROOT.kGreen+2), RooFit.LineStyle(2), RooFit.LineWidth(1))
+    #signal_set = RooArgSet(w.pdf(sgn_name))
+    #modelPdf.plotOn(frame,RooFit.Components(signal_set), RooFit.LineColor(ROOT.kGreen+2), RooFit.LineStyle(2), RooFit.LineWidth(1))
+    modelPdf.plotOn(frame,RooFit.Components(sgn_name), RooFit.LineColor(ROOT.kGreen+2), RooFit.LineStyle(2), RooFit.LineWidth(1))
     if withD:
-        Dpeak_set = RooArgSet(Dpeak)
-        modelPdf.plotOn(frame,RooFit.Components(Dpeak_set), RooFit.LineColor(ROOT.kRed), RooFit.LineStyle(2), RooFit.LineWidth(1))
-    background_set = RooArgSet(background)
-    modelPdf.plotOn(frame,RooFit.Components(background_set), RooFit.LineColor(ROOT.kBlack), RooFit.LineStyle(2), RooFit.LineWidth(1))
+        #Dpeak_set = RooArgSet(w.pdf('Dpeak'))
+        modelPdf.plotOn(frame,RooFit.Components('Dpeak'), RooFit.LineColor(ROOT.kRed), RooFit.LineStyle(2), RooFit.LineWidth(1))
+    #background_set = RooArgSet(w.pdf('background'))
+    modelPdf.plotOn(frame,RooFit.Components('background'), RooFit.LineColor(ROOT.kBlack), RooFit.LineStyle(2), RooFit.LineWidth(1))
     modelPdf.plotOn(frame, RooFit.LineWidth(2))
 
     # Legends
-    parameters_on_legend = RooArgSet(n_bkg,n_sig,n_Dpeak,mean_D,sigma_D, alpha_D)
-    modelPdf.paramOn(frame, RooFit.Layout(0.1,0.44,0.5))#,RooFit.Parameters(parameters_on_legend))#(0.1,0.44,0.9))
+    #parameters_on_legend = RooArgSet(n_bkg,n_sig,n_Dpeak,mean_D,sigma_D, alpha_D)
+    #modelPdf.paramOn(frame, RooFit.Layout(0.1,0.44,0.5)),RooFit.Parameters(parameters_on_legend))#(0.1,0.44,0.9))
+    w.defineSet('parameters_on_legend', 'n_bkg, n_sig, n_Dpeak, mean_D, sigma_D, alpha_D')
+    parameters_on_legend = RooArgSet(w.var('n_bkg'), w.var('n_sig'), w.var('n_Dpeak'), w.var('mean_D'), w.var('sigma_D'), w.var('alpha_D'))
+    modelPdf.paramOn(frame, RooFit.Layout(0.1,0.44,0.5),RooFit.Parameters(parameters_on_legend))#(0.1,0.44,0.9))
     chi2 = round(frame.chiSquare(),2)
     leg = TLegend(0.3,0,.10,.10)
     leg.SetBorderSize(0)

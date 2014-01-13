@@ -29,15 +29,15 @@ def doMCFit(dataSet):
     # DEFINE PDF
     ######################################################
     # Signal
-    mean = RooRealVar('#mu','mean',1777, 1760,1790) 
-    sigma = RooRealVar('#sigma','sigma',5,0,10)
-    gamma = RooRealVar('#Gamma','gamma',5,0,10)
-    alpha = RooRealVar('#alpha', 'alpha', 1.5)#, 0.1, 10)
-    param_n = RooRealVar('n','param_n', 10, 0.1, 100)
-    # signal = ROOT.RooGaussian('signal','signal',x,mean,sigma)
-    # signal = ROOT.RooBreitWigner('signal','signal',x,mean,gamma)
-    # signal = ROOT.RooCBShape('CB','CB', x, mean, sigma, alpha, param_n)
-    signal = ROOT.RooDSCBShape('DSCB','DSCB', x, mean, sigma, alpha, param_n, alpha, param_n)
+    # mean = RooRealVar('#mu','mean',1777, 1760,1790) 
+    # sigma = RooRealVar('#sigma','sigma',5,0,10)
+    # gamma = RooRealVar('#Gamma','gamma',5,0,10)
+    # alpha = RooRealVar('#alpha', 'alpha', 1.5)#, 0.1, 10)
+    # param_n = RooRealVar('n','param_n', 10, 0.1, 100)
+    # # signal = ROOT.RooGaussian('signal','signal',x,mean,sigma)
+    # # signal = ROOT.RooBreitWigner('signal','signal',x,mean,gamma)
+    # # signal = ROOT.RooCBShape('CB','CB', x, mean, sigma, alpha, param_n)
+    # signal = ROOT.RooDSCBShape('DSCB','DSCB', x, mean, sigma, alpha, param_n, alpha, param_n)
     
 
     
@@ -53,14 +53,15 @@ def doMCFit(dataSet):
     # signal = RooAddPdf('ModelPdf', 'ModelPdf', pdf_list, ratio_list)
 
     # #try the same with workspace
-    # w = RooWorkspace('w')
-    # getattr(w,'import')(x)
-    # w.factory('''RooDSCBShape::DSCB('''+x_var+''',
-    # #mu[1777, 1760,1790],
-    # #sigma[5,0,10],
-    # #alpha[1.5], n[10, 0.1, 100],
-    # #alpha, n)''')
-    # signal = w.pdf('DSCB')
+    w = RooWorkspace('w')
+    getattr(w,'import')(x)
+    w.factory('''RooDSCBShape::DSCB({0},
+    #mu[1777, 1760,1790],
+    #sigma[5,0,10],
+    #alpha[1.5], n[10, 0.1, 100],
+    #alpha, n
+    )'''.format(x_var))
+    signal = w.pdf('DSCB')
         
 
     # Fit
@@ -87,11 +88,12 @@ def doMCFit(dataSet):
     frame.Draw()
     c1.Update()
 
-    for var in (mean, sigma, alpha, param_n):
-        var.setConstant()
+    for prm in ('#mu', '#sigma', '#alpha', 'n'):
+        w.var(prm).setConstant()
     
     pickle.dump(signal,open('pickles/pdf.pkl','wb'))
-    return signal, c1
+    w.SaveAs('pickles/w_'+x_var+'.root')
+    return w, c1
     
 
 
@@ -105,6 +107,6 @@ if __name__ == '__main__':
     # Make fit
     inFile = TFile('rooDataSet_MC.root')
     dataSet = inFile.Get('taus')
-    pdf, c1 = doMCFit(dataSet)
+    w, c1 = doMCFit(dataSet)
     c1.Print('plotMCFit.pdf')
     # pickle.dump(pdf,open('pickles/pdf.pkl','wb'))
