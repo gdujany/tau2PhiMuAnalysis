@@ -1,5 +1,16 @@
 #!/usr/bin/python
 
+##########################
+###   Options parser   ###
+if __name__ == '__main__':
+    import argparse
+    parser = argparse.ArgumentParser(description = 'dataFit.py')
+    parser.add_argument('-f','--DTF',help='Use DTF variables',action='store_true')
+    parser.add_argument('-d','--dataset',help='make also dataset',action='store_true')
+    args = parser.parse_args()
+##########################
+
+import argparse
 from ROOT import gSystem
 gSystem.Load('../PDFs/RooDSCBShape_cxx')
 from ROOT import RooDataSet, RooRealVar, RooArgSet, RooFormulaVar, RooGenericPdf, RooCmdArg, RooStats
@@ -13,16 +24,12 @@ from pyUtils import *
 
 gROOT.SetBatch()
 
-def doDataFit(dataSet):
+def doDataFit(dataSet, w, x_var, addTitlePlot=''):
 
     withD = True
 
-    x_var = 'Tau_M' #'Tau_DTF_Tau_M'
-
     cuts_str = ''
     data = dataSet.reduce( RooFit.Cut(cuts_str) )
-
-    w = TFile('pickles/w_'+x_var+'.root').Get('w')
 
     x = w.var(x_var)
     x.setRange(1630,1900)
@@ -34,51 +41,52 @@ def doDataFit(dataSet):
 
     ##########################################################
     # Linear fit
-    gStyle.SetStatY(0.65) # Set y-position (fraction of pad size)
-    gStyle.SetStatX(0.5) # Set x-position (fraction of pad size)
-    gStyle.SetStatW(0.2) # Set width of stat-box (fraction of pad size)
-    gStyle.SetStatH(0.2) # Set height of stat-box (fraction of pad size)
+    # gStyle.SetStatY(0.65) # Set y-position (fraction of pad size)
+    # gStyle.SetStatX(0.5) # Set x-position (fraction of pad size)
+    # gStyle.SetStatW(0.2) # Set width of stat-box (fraction of pad size)
+    # gStyle.SetStatH(0.2) # Set height of stat-box (fraction of pad size)
     
 
-    c1 = TCanvas('c1', 'c1')
-    c1.Print('plotDataFit_linear.pdf[')
-    inFile = TFile('histo.root')
-    histo = inFile.Get('Tau_M_histo__Tau_M')
-    gStyle.SetOptFit(1111)
-    histo.Fit('x++x^2++x^3+1')
-    histo.Draw()
-    c1.Update()  
-    c1.Print('plotDataFit_linear.pdf')
+    # c1 = TCanvas('c1', 'c1')
+    # c1.Print('plots/plotDataFit_linear.pdf[')
+    # inFile = TFile('histo.root')
+    # histo = inFile.Get('Tau_M_histo__Tau_M')
+    # gStyle.SetOptFit(1111)
+    # histo.Fit('x++x^2++x^3+1')
+    # histo.Draw()
+    # c1.Update()  
+    # c1.Print('plots/plotDataFit_linear.pdf')
 
-    params = [histo.GetFunction('x++x^2++x^3+1').GetParameter(i) for i in range(3)]
-    params[0:0] = [1]
-    print params
-    params2 = [params[i]/params[0] for i in range(len(params))]
-    print params2
+    # params = [histo.GetFunction('x++x^2++x^3+1').GetParameter(i) for i in range(3)]
+    # params[0:0] = [1]
+    # print params
+    # params2 = [params[i]/params[0] for i in range(len(params))]
+    # print params2
 
-    fun_test = TF1('fun_test','{0}+{1}*x+{2}*x^2+{3}*x^3'.format(*params),1630,1810)
-    fun_test.Draw()
-    c1.Print('plotDataFit_linear.pdf')
-    fun_norm = TF1('fun_test','{0}+{1}*x+{2}*x^2+{3}*x^3'.format(*params2),1630,1810)
-    fun_norm.Draw()
-    c1.Print('plotDataFit_linear.pdf')  
+    # fun_test = TF1('fun_test','{0}+{1}*x+{2}*x^2+{3}*x^3'.format(*params),1630,1810)
+    # fun_test.Draw()
+    # c1.Print('plots/plotDataFit_linear.pdf')
+    # fun_norm = TF1('fun_test','{0}+{1}*x+{2}*x^2+{3}*x^3'.format(*params2),1630,1810)
+    # fun_norm.Draw()
+    # c1.Print('plots/plotDataFit_linear.pdf')  
 
-    # All fit linear
-    lin_pdf = TF1('lin_pdf','1++x++x^2++x^3++TMath::Gaus(x,1777,5)',1630,1810)#1747,1807)
-    lin_pdf.SetParName(4,'n_sig')
-    histo.Fit('lin_pdf','R')
-    histo.SetTitle('Linear fit: polynomial + Gaussian;m_{#tau} (MeV);')
-    histo.Draw()
-    c1.Update()  
-    c1.Print('plotDataFit_linear.pdf')
-    c1.Print('plotDataFitLinear.pdf')
+    # # All fit linear
+    # lin_pdf = TF1('lin_pdf','1++x++x^2++x^3++TMath::Gaus(x,1777,5)',1630,1810)#1747,1807)
+    # lin_pdf.SetParName(4,'n_sig')
+    # histo.Fit('lin_pdf','R')
+    # histo.SetTitle('Linear fit: polynomial + Gaussian;m_{#tau} (MeV);')
+    # histo.Draw()
+    # c1.Update()  
+    # c1.Print('plots/plotDataFit_linear.pdf')
+    # c1.Print('plots/plotDataFitLinear.pdf')
     
-    c1.Print('plotDataFit_linear.pdf]')
+    # c1.Print('plots/plotDataFit_linear.pdf]')
     
     
     ######################################################
     # DEFINE PDF
     ######################################################
+    
     # Signal
     sgn_name = 'DSCB'
     signal = w.pdf(sgn_name)
@@ -91,52 +99,14 @@ def doDataFit(dataSet):
         a2[-0.1,-1,1],
         a3[0.05,-1,1]}
         )''')
-                
-        # a1 = RooRealVar('a1','a1',-0.5,-1,1)#16.,0.,100.)# ,0.5,0.,1.)
-        # a2 = RooRealVar('a2','a2',-0.1,-1,1)#-0.0075,-10.,10.) #-0.2,0.,1.)
-        # a3 = RooRealVar('a3','a3',0.05,-1,1)
-        # background = RooChebychev('background','Background',x,RooArgList(a1,a2,a3))
     else:
         w.factory('''RooPolynomial::background('''+x_var+''',
         {a1[params2[1],params2[1]*0.5,params2[1]*1.5],
         a2[params2[2],params2[2]*0.5,params2[2]*1.5],
         a3[params2[3],params2[3]*0.5,params2[3]*1.5]}
         )''')
-        # a1 = RooRealVar('a1','a1',params2[1],params2[1]*0.5,params2[1]*1.5)#16.,0.,100.)# ,0.5,0.,1.)
-        # a2 = RooRealVar('a2','a2',params2[2],params2[2]*0.5,params2[2]*1.5)#-0.0075,-10.,10.) #-0.2,0.,1.)
-        # a3 = RooRealVar('a3','a3',params2[3],params2[3]*0.5,params2[3]*1.5)#1,-10.,10.)
-        # esp = RooRealVar('esp','esp',0.,-0.5,0.5) #,0.5,0.,1.)
-        # background = RooPolynomial('background','Background',x,RooArgList(a1,a2,a3))
         
-    
-    #background = RooExponential('background','Background',x,esp)
-   
     # Toghether
-
-    # pdf_list = RooArgList(signal, background)   
-    # ratio_SB = RooRealVar("ratio_SB","ratio_SB",0.1, 0, 1)
-    # n_sig = RooRealVar("n_sig","n_sig",5, 0, 100)
-    # n_bkg =  RooRealVar("n_bkg","n_bkg",10000000, 0, 10000000000)
-    # #ratio_list = RooArgList(ratio_SB)
-    # ratio_list = RooArgList(n_sig, n_bkg)
-    
-    # #withD=False
-    # # With D peak
-    # if withD:
-    #     mean_D = RooRealVar('mean_D','mean_D',1860,1830,1890) 
-    #     sigma_D = RooRealVar('sigma_D','sigma_D',7,0,15)
-    #     alpha_D = RooRealVar('alpha_D','alpha_D',0.5,0,5)
-    #     n_D = RooRealVar('n_D','n_D',3)
-    #     #Dpeak = ROOT.RooGaussian('Dpeak','Dpeak',x,mean_D,sigma_D)
-    #     Dpeak = ROOT.RooCBShape('Dpeak','Dpeak',x,mean_D,sigma_D,alpha_D,n_D)
-    #     n_Dpeak = RooRealVar("n_Dpeak","n_Dpeak",100000, 0, 100000000)
-    #     ratio_list.add(n_Dpeak)
-    #     pdf_list.add(Dpeak)
-
-    # # pdf_list = RooArgList(background, Dpeak)
-    # # ratio_list = RooArgList(n_bkg, n_Dpeak)
-    # modelPdf = RooAddPdf('ModelPdf', 'ModelPdf', pdf_list, ratio_list)
-
     if withD:
         w.factory('''RooCBShape::Dpeak({0},
         mean_D[1860,1830,1890],
@@ -161,22 +131,16 @@ def doDataFit(dataSet):
     result = modelPdf.fitTo(dataSet, RooFit.Save(), RooFit.Range('fit_region'))
    
     # Frame
-    frame = x.frame(RooFit.Title(' Combined mass KK#mu '))
+    frame = x.frame(RooFit.Title(' Combined mass KK#mu '+addTitlePlot))
     dataSet.plotOn(frame)
-    #signal_set = RooArgSet(w.pdf(sgn_name))
-    #modelPdf.plotOn(frame,RooFit.Components(signal_set), RooFit.LineColor(ROOT.kGreen+2), RooFit.LineStyle(2), RooFit.LineWidth(1))
     modelPdf.plotOn(frame,RooFit.Components(sgn_name), RooFit.LineColor(ROOT.kGreen+2), RooFit.LineStyle(2), RooFit.LineWidth(1))
     if withD:
-        #Dpeak_set = RooArgSet(w.pdf('Dpeak'))
         modelPdf.plotOn(frame,RooFit.Components('Dpeak'), RooFit.LineColor(ROOT.kRed), RooFit.LineStyle(2), RooFit.LineWidth(1))
-    #background_set = RooArgSet(w.pdf('background'))
     modelPdf.plotOn(frame,RooFit.Components('background'), RooFit.LineColor(ROOT.kBlack), RooFit.LineStyle(2), RooFit.LineWidth(1))
     modelPdf.plotOn(frame, RooFit.LineWidth(2))
 
     # Legends
-    #parameters_on_legend = RooArgSet(n_bkg,n_sig,n_Dpeak,mean_D,sigma_D, alpha_D)
-    #modelPdf.paramOn(frame, RooFit.Layout(0.1,0.44,0.5)),RooFit.Parameters(parameters_on_legend))#(0.1,0.44,0.9))
-    w.defineSet('parameters_on_legend', 'n_bkg, n_sig, n_Dpeak, mean_D, sigma_D, alpha_D')
+    #w.defineSet('parameters_on_legend', 'n_bkg, n_sig, n_Dpeak, mean_D, sigma_D, alpha_D')
     parameters_on_legend = RooArgSet(w.var('n_bkg'), w.var('n_sig'), w.var('n_Dpeak'), w.var('mean_D'), w.var('sigma_D'), w.var('alpha_D'))
     modelPdf.paramOn(frame, RooFit.Layout(0.1,0.44,0.5),RooFit.Parameters(parameters_on_legend))#(0.1,0.44,0.9))
     chi2 = round(frame.chiSquare(),2)
@@ -189,16 +153,29 @@ def doDataFit(dataSet):
     c1 = TCanvas('c1', 'c1')
     frame.Draw()
     c1.Update()  
-    c1.Print('plotDataFit.pdf')
+    return w, c1
 
 
 if __name__ == '__main__':
 
+    ##########################
+    if args.DTF:
+        DTF_label = '_DTF'
+        x_var = 'Tau_DTF_Tau_M'
+        addTitlePlot = 'DTF'
+    else:
+        DTF_label = ''
+        x_var = 'Tau_M'
+    ##########################
+        
     # Make Dataset
-    # dataSet = makeRooDataset('/afs/cern.ch/work/g/gdujany/LHCb/LFV/store/data2012.root')
-    # dataSet.SaveAs('rooDataSet.root')
+    if args.dataset:
+        print 'Making RooDataSet'
+        dataSet = makeRooDataset('/afs/cern.ch/work/g/gdujany/LHCb/LFV/store/data2012.root')
+        dataSet.SaveAs('RooDataSets/rooDataSet.root')
 
     # Make fit
-    inFile = TFile('rooDataSet.root')
-    dataSet = inFile.Get('taus')
-    doDataFit(dataSet)
+    w = TFile('pickles/signalShape'+DTF_label+'.root').Get('w')
+    dataSet = TFile('RooDataSets/rooDataSet.root').Get('taus')
+    w, c1 = doDataFit(dataSet, w, x_var, addTitlePlot)
+    c1.Print('plots/plotDataFit'+DTF_label+'.pdf')

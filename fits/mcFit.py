@@ -1,5 +1,15 @@
 #!/usr/bin/python
 
+##########################
+###   Options parser   ###
+if __name__ == '__main__':
+    import argparse
+    parser = argparse.ArgumentParser(description = 'mcFit.py')
+    parser.add_argument('-f','--DTF',help='Use DTF variables',action='store_true')
+    parser.add_argument('-d','--dataset',help='make also dataset',action='store_true')
+    args = parser.parse_args()
+##########################
+
 from ROOT import gSystem
 gSystem.Load('../PDFs/RooDSCBShape_cxx')
 from ROOT import RooDataSet, RooRealVar, RooArgSet, RooFormulaVar, RooGenericPdf, RooCmdArg, RooStats, RooWorkspace
@@ -12,71 +22,41 @@ from array import array
 from pyUtils import *
 
 gROOT.SetBatch()
- 
-def doMCFit(dataSet):
-    
-    x_var = 'Tau_M' #'Tau_DTF_Tau_M'
+
+def doMCFit(dataSet, x_var, addTitlePlot=''):  
     
     cuts_str = ''
     data = dataSet.reduce( RooFit.Cut(cuts_str) )
 
     x=RooRealVar(x_var, 'm_{#tau}',1757,1797,'MeV')
-    x.Print()
     numBins = 100 # define here so that if I change it also the ndof change accordingly
     x.setBins(numBins)
 
     ######################################################
     # DEFINE PDF
     ######################################################
-    # Signal
-    # mean = RooRealVar('#mu','mean',1777, 1760,1790) 
-    # sigma = RooRealVar('#sigma','sigma',5,0,10)
-    # gamma = RooRealVar('#Gamma','gamma',5,0,10)
-    # alpha = RooRealVar('#alpha', 'alpha', 1.5)#, 0.1, 10)
-    # param_n = RooRealVar('n','param_n', 10, 0.1, 100)
-    # # signal = ROOT.RooGaussian('signal','signal',x,mean,sigma)
-    # # signal = ROOT.RooBreitWigner('signal','signal',x,mean,gamma)
-    # # signal = ROOT.RooCBShape('CB','CB', x, mean, sigma, alpha, param_n)
-    # signal = ROOT.RooDSCBShape('DSCB','DSCB', x, mean, sigma, alpha, param_n, alpha, param_n)
     
-
-    
-    #signal = ROOT.RooGenericPdf('SuperGaus','TMath::Exp(-(@0-@1)^2/(2*@2) - (@0-@1)^4/(4*@3))', RooArgList(x,mean,sigma,gamma))
-    #signal = ROOT.RooVoigtian('signal','signal',x,mean,sigma,gamma)
-
-    # # Sum 2 Gaussians
-    # gaus1 = ROOT.RooGaussian('gaus1','gaus1',x,mean,sigma)
-    # gaus2 = ROOT.RooGaussian('gaus2','gaus2',x,mean,gamma)
-    # ratio_12 = RooRealVar("ratio_12","ratio_12",0.5, 0, 1)
-    # pdf_list = RooArgList(gaus1, gaus2)
-    # ratio_list = RooArgList(ratio_12)
-    # signal = RooAddPdf('ModelPdf', 'ModelPdf', pdf_list, ratio_list)
-
-    # #try the same with workspace
     w = RooWorkspace('w')
     getattr(w,'import')(x)
     w.factory('''RooDSCBShape::DSCB({0},
     #mu[1777, 1760,1790],
     #sigma[5,0,10],
-    #alpha[1.5], n[10, 0.1, 100],
+    #alpha[1.4], n[10, 0.1, 100],
     #alpha, n
     )'''.format(x_var))
     signal = w.pdf('DSCB')
-        
-
+  
     # Fit
     fit_region = x.setRange('fit_region',1757,1797)
     result = signal.fitTo(dataSet, RooFit.Save(), RooFit.Range('fit_region'))
 
     # Frame
-    frame = x.frame(RooFit.Title(' Combined mass KK#mu '))
+    frame = x.frame(RooFit.Title(' Combined mass KK#mu '+addTitlePlot))
     dataSet.plotOn(frame)
-    signal_set = RooArgSet(signal)
     signal.plotOn(frame, RooFit.LineWidth(2))
 
     # Legends
-    #parameters_on_legend = RooArgSet(n_bkg,n_sig,n_Dpeak,mean_D,sigma_D, alpha_D)
-    signal.paramOn(frame, RooFit.Layout(0.6,0.9,0.9))#,RooFit.Parameters(parameters_on_legend))#(0.1,0.44,0.9))
+    signal.paramOn(frame, RooFit.Layout(0.6,0.9,0.9))
     chi2 = round(frame.chiSquare(),2)
     leg = TLegend(0.3,0,.10,.10)
     leg.SetBorderSize(0)
@@ -88,25 +68,36 @@ def doMCFit(dataSet):
     frame.Draw()
     c1.Update()
 
-    for prm in ('#mu', '#sigma', '#alpha', 'n'):
+    for prm in ('#mu', '#sigma', '#alpha', 'n'): # TODO: automatize finding of variables from the function
         w.var(prm).setConstant()
     
-    pickle.dump(signal,open('pickles/pdf.pkl','wb'))
-    w.SaveAs('pickles/w_'+x_var+'.root')
     return w, c1
     
 
 
 if __name__ == '__main__':
-
-    # # Make Dataset
-    # dataSet = makeRooDataset('/afs/cern.ch/work/g/gdujany/LHCb/LFV/store/tau2PhiMuFromPDs.root')
-    # dataSet.SaveAs('rooDataSet_MC.root')
     
-
+    ##########################
+    if args.DTF:
+        DTF_label = '_DTF'
+        x_var = 'Tau_DTF_Tau_M'
+        addTitlePlot = 'DTF'
+    else:
+        DTF_label = ''
+        x_var = 'Tau_M'
+        addTitlePlot = ''
+    ##########################
+        
+    # Make Dataset
+    if args.dataset:
+        print 'Making RooDataSet'
+        dataSet = makeRooDataset('/afs/cern.ch/work/g/gdujany/LHCb/LFV/store/tau2PhiMuFromPDs.root')
+        dataSet.SaveAs('RooDataSets/rooDataSet_MC.root')
+    
     # Make fit
-    inFile = TFile('rooDataSet_MC.root')
+    inFile = TFile('RooDataSets/rooDataSet_MC.root')
     dataSet = inFile.Get('taus')
-    w, c1 = doMCFit(dataSet)
-    c1.Print('plotMCFit.pdf')
-    # pickle.dump(pdf,open('pickles/pdf.pkl','wb'))
+    w, c1 = doMCFit(dataSet, x_var, addTitlePlot)
+    c1.Print('plots/plotMCFit'+DTF_label+'.pdf')
+    w.SaveAs('pickles/signalShape'+DTF_label+'.root')
+    

@@ -1,5 +1,15 @@
 #!/usr/bin/python
 
+##########################
+###   Options parser   ###
+if __name__ == '__main__':
+    import argparse
+    parser = argparse.ArgumentParser(description = 'phiSudies.py')
+    parser.add_argument('-f','--DTF',help='Use DTF variables',action='store_true')
+    parser.add_argument('-d','--dataset',help='make also dataset',action='store_true')
+    args = parser.parse_args()
+##########################
+
 sample = 'data2012'
 #sample = 'tau2PhiMuFromPDs'
 
@@ -16,7 +26,7 @@ gROOT.SetBatch()
 
 colori=[ROOT.kBlue, ROOT.kRed, ROOT.kGreen+2, ROOT.kMagenta+1, ROOT.kOrange-3, ROOT.kYellow, ROOT.kCyan]
 
-from ROOT import RooFit, RooRealVar, RooDataHist, RooArgList, RooDataSet, RooArgSet, RooChebychev, RooAddPdf, RooPolynomial, RooExponential, RooFormulaVar
+from ROOT import RooFit, RooRealVar, RooDataHist, RooArgList, RooDataSet, RooArgSet, RooChebychev, RooAddPdf, RooPolynomial, RooExponential, RooFormulaVar, RooWorkspace
 
 def makeRooDataset():
     inFile_name = '/afs/cern.ch/user/g/gdujany/work/LHCb/LFV/store/'+sample+'.root'
@@ -29,37 +39,36 @@ def makeRooDataset():
     dataArgSet = RooArgSet(Phi_M, Tau_DTF_Phi_M)
     print 'Making a dataset from file', inFile_name
     dataSet = RooDataSet("phi_mass_dataset","phi_mass_dataset", tree, dataArgSet)
-    dataSet.SaveAs('rooDataSet_'+sample+'.root')
     return dataSet
 
-
-
     
-def makeFit():
+def makeFit(dataSet, x_var):
 
-    inFile = TFile('rooDataSet_'+sample+'.root')
-    dataSet = inFile.Get('phi_mass_dataset')
-    
+       
     # Fit m_DTF_Phi
     gStyle.SetOptFit(1111)
     #histo = histos['m_DTF_Phi']
     #x_var = 'Tau_DTF_Phi_M' #'Phi_M'
-    x_var = 'Phi_M'
-    x = RooRealVar(x_var, 'm_{#Phi}', 1008,1032, 'MeV')
-    #x = RooRealVar(x_var, 'm_{#Phi}', 1010,1027, 'MeV')
+    
+    w = RooWorkspace('w')
+    x = w.factory(x_var+'[1008,1032]')
+    x.setUnit('MeV')
     x.setBins(200)
-    #ral = RooArgList(x)
-    #dh = RooDataHist ("dh","dh",ral,RooFit.Import(histo))
+    # x = RooRealVar(x_var, 'm_{#Phi}', 1008,1032, 'MeV')
+    # #x = RooRealVar(x_var, 'm_{#Phi}', 1010,1027, 'MeV')
+    # x.setBins(200)
+    # #ral = RooArgList(x)
+    # #dh = RooDataHist ("dh","dh",ral,RooFit.Import(histo))
     
     
     # Signal
-    mean = RooRealVar("#mu","#mu",1020,1010,1025) 
-    gamma = RooRealVar("#Gamma_{0}","#Gamma",3,0.1,10)
-    spin = RooRealVar("J","J",1)
-    radius = RooRealVar("radius","radius",0.003)#, 0, 0.01)
-    m_K = RooRealVar("m_K","m_K", 493.677)
-    #signal = ROOT.RooBreitWigner('BW','BW',x,mean, gamma)
-    signal = ROOT.RooRelBreitWigner('BW','BW',x,mean, gamma,spin,radius,m_K,m_K)
+    signal = w.factory('''RooRelBreitWigner::signal('''+x_var+''',
+    #mu[1020,1010,1025],
+    #Gamma[3,0.1,10],
+    J[1], radius[0.003],
+    m_K[493.677],m_K
+    )''')
+    
     
 
     # Background
@@ -71,14 +80,14 @@ def makeFit():
     #background = RooPolynomial('background','Background',xm,RooArgList(a1))
     #background = RooPolynomial('background','Background',xm,RooArgList())
     background = RooExponential('background','Background',x,esp)
+    getattr(w,'import')(background)
    
     # Toghether
-    pdf_list = RooArgList(signal, background)   
-    ratio_SB = RooRealVar("ratio_SB","ratio_SB",0.7, 0, 1)
-    ratio_list = RooArgList(ratio_SB)
-    modelPdf = RooAddPdf('ModelPdf', 'ModelPdf', pdf_list, ratio_list)
-    #modelPdf = signal
-
+    w.factory('''SUM::modelPdf(
+    ratio_SB[0.7, 0, 1] * signal,
+    background)''')
+    modelPdf = w.pdf('modelPdf')
+    
     # Fit
     fit_region = x.setRange("fit_region",1013,1027)
     result = modelPdf.fitTo(dataSet, RooFit.Save(), RooFit.Range("fit_region"))
@@ -104,10 +113,7 @@ def makeFit():
     c1 = TCanvas('c1', 'c1')
     frame.Draw()
     c1.Update()  
-    if x_var == 'Phi_M': 
-        c1.Print('plotPhi.pdf')
-    else:
-        c1.Print('plotPhi_DTF.pdf')
+    return c1
     
 
 
@@ -168,11 +174,30 @@ def plotPDF():
     frame.Draw()
     c1.Update()
 
-    c1.Print('plotPDF.pdf')
+    return c1
 
 
 if __name__ == '__main__':
+
+    ##########################
+    if args.DTF:
+        DTF_label = '_DTF'
+        x_var = 'Tau_DTF_Phi_M'
+        addTitlePlot = 'DTF'
+    else:
+        DTF_label = ''
+        x_var = 'Phi_M'
+    ##########################
+
+    if args.dataset:
+        dataSet = makeRooDataset()
+        dataSet.SaveAs('rooDataSet_'+sample+'.root')
+
+    dataSet = TFile('rooDataSet_'+sample+'.root').Get('phi_mass_dataset')
+    c1 = makeFit(dataSet, x_var)
+    if x_var == 'Phi_M': 
+        c1.Print('plotPhi.pdf')
+    else:
+        c1.Print('plotPhi_DTF.pdf')
     
-    #makeRooDataset()
-    makeFit()
     #plotPDF()
