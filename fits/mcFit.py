@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 ##########################
 ###   Options parser   ###
@@ -19,7 +19,9 @@ from ROOT import TFile, TCanvas, TPad, TH1F, TGraphErrors, TPad, TLegend, TPaveT
 from ROOT import TH1D, TH1F, TTree, RooHistPdf, TLine, TF1
 import ROOT, sys, getopt, pickle 
 from array import array
-from pyUtils import *
+import sys
+sys.path.append('..')
+from fits import makeRooDataset
 
 gROOT.SetBatch()
 

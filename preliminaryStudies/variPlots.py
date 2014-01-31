@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 # sample = 'data2012'
 # sample = 'tau2PhiMuFromPDs'

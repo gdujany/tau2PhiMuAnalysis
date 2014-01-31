@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 ##########################
 ###   Options parser   ###
@@ -10,7 +10,6 @@ if __name__ == '__main__':
     args = parser.parse_args()
 ##########################
 
-import argparse
 from ROOT import gSystem
 gSystem.Load('../PDFs/RooDSCBShape_cxx')
 from ROOT import RooDataSet, RooRealVar, RooArgSet, RooFormulaVar, RooGenericPdf, RooCmdArg, RooStats
@@ -20,7 +19,12 @@ from ROOT import TFile, TCanvas, TPad, TH1F, TGraphErrors, TPad, TLegend, TPaveT
 from ROOT import TH1D, TH1F, TTree, RooHistPdf, TLine, TF1
 import ROOT, sys, getopt, pickle
 from array import array
-from pyUtils import *
+import sys
+sys.path.append('..')
+from fits import makeRooDataset
+
+print 'qui'
+sys.exit()
 
 gROOT.SetBatch()
 

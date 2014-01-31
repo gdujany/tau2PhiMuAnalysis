@@ -1,11 +1,11 @@
 # Use DaVinci v33r8 and ganga 6
-import sys, os, pickle
+import sys, os
 # to be able to import jobSetup using gaudirun
 sys.path.append(os.getcwd())
 from jobSetup import *
 
 try:
-    dataSample = dataSamples[open('dataSample.txt').readline()] #pickle.load(open('dataSample.pkl','rb'))  
+    dataSample = dataSamples[open('dataSample.txt').readline()] 
 except IOError:
     pass # keep dataSample defined in jobSetup.py and loaded with from import *
 
@@ -201,6 +201,16 @@ tuple.Tau.LoKi_DTF.Variables.update({
     'DTFTau_Phi_M' : "DTF_FUN ( CHILD(M, 1) , False, 'tau-' )"
     })
 
+# Triggers:
+L0_list = ['L0HadronDecision', 'L0MuonDecision', 'L0DiMuonDecision']
+HLT1_list = ['Hlt1TrackAllL0Decision', 'Hlt1TrackMuonDecision']
+HLT2_list = ['Hlt2CharmHadD2HHHDecision', 'Hlt2IncPhiDecision', 'Hlt2SingleMuonDecision', 'Hlt2CharmHadLambdaC2KPKDecision', 'Hlt2CharmHadLambdaC2KPPiDecision', 'Hlt2TopoMu3BodyBBDTDecision']
+
+tuple.Tau.addTupleTool('TupleToolTISTOS/TISTOS')
+tuple.Tau.TISTOS.VerboseL0   = True
+tuple.Tau.TISTOS.VerboseHlt1 = True
+tuple.Tau.TISTOS.VerboseHlt2 = True
+tuple.Tau.TISTOS.TriggerList = L0_list + HLT1_list + HLT2_list
 
 
 

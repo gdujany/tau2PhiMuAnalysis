@@ -51,16 +51,20 @@ for MagnetPolarity in ('mu', 'md'):
 # list of datasamples to be analized
 toAnalize = [dataSample for key, dataSample in dataSamples.items() if key[:-3] in MC_list]
 toAnalize += [dataSamples['data2012_mu'], dataSamples['data2012_md']]
-#toAnalize =  [dataSamples['tau2PhiMuFromBDs_mu']]
-#toAnalize = [dataSamples[i] for i in ('tau2PhiMuFromB_mu', 'tau2PhiMuFromPD_md')]
+
+# For test
+#toAnalize =  [dataSamples['tau2PhiMuFromPDs_mu']]
+# dataSamples['data2012_md'].isPrescaled = False
+# toAnalize = [dataSamples['data2012_md']]
+
 
 
 dataSample = toAnalize[0]
 
 # General options
-isGrid = True
+isGrid = True #False
 isStoreInCastor = False
-nEvents = -1
+nEvents = -1 #1000
 
 #toAnalize = dataSamples.values()
 
@@ -70,11 +74,10 @@ nEvents = -1
 
 if __name__ == '__main__':
 
-    from subprocess import call, pickle
+    from subprocess import call
 
     def submitJob(dataSample):
 
-        #pickle.dump(dataSample, open('dataSample.pkl','w'))
         with open('dataSample.txt','w') as dsFile:
             dsFile.write(dataSample.name)
 
