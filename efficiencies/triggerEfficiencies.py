@@ -27,7 +27,7 @@ HLT2_list = ['Hlt2CharmHadD2HHHDecision_TOS', 'Hlt2IncPhiDecision_TOS', 'Hlt2Sin
 def get_counters(tree):
     '''
     Receive as an input the tree and give as an output a dictionary with the number of events wich pass each trigger line
-    I also have keys "Total", "Total_L0", "Total_HLT1" and "Total_HLT2"
+    I also have keys "Total", "Total_L0", "Total_HLT1" and "Total_HLT2, my_L0, my_HLT2"
     '''
     tree.SetBranchStatus("*",0)
     branches = ['Tau_'+i for i in L0_list+ HLT1_list + HLT2_list]
@@ -46,6 +46,8 @@ def get_counters(tree):
     counters['Total'] = nEvents
     for trigger in ('L0', 'HLT1', 'HLT2'):
         counters['Total_'+trigger] = 0
+    counters['my_L0'] = 0
+    counters['my_HLT2'] = 0
     
     for cont, entrie in enumerate(tree):
         if cont == nEvents: break
@@ -55,6 +57,9 @@ def get_counters(tree):
         isPassedL0 = False
         for trigger in L0_list:
             exec 'if Tau_'+trigger+'[0]: counters[trigger] += 1; isPassedL0 = True'
+        if Tau_L0Global_TIS[0] or Tau_L0MuonDecision_TOS[0]:
+            counters['my_L0'] += 1
+            
 
         isPassedHLT1 = False
         if isPassedL0:
@@ -67,6 +72,8 @@ def get_counters(tree):
             counters['Total_HLT1'] += 1
             for trigger in HLT2_list:
                 exec 'if Tau_'+trigger+'[0]: counters[trigger] += 1; isPassedHLT2 = True'
+            if Tau_Hlt2IncPhiDecision_TOS[0] or Tau_Hlt2CharmHadD2HHHDecision_TOS[0]:
+                counters['my_HLT2'] += 1
 
         if isPassedHLT2:
             counters['Total_HLT2'] += 1
@@ -84,13 +91,13 @@ def get_efficiencies(counters):
 
     efficiencies = {}
     
-    for trigger in L0_list + ['Total_L0']:
+    for trigger in L0_list + ['Total_L0', 'my_L0']:
         efficiencies[trigger] = Efficiency(N_gen=counters['Total'], N_sel=counters[trigger])
 
     for trigger in HLT1_list + ['Total_HLT1']:
         efficiencies[trigger] = Efficiency(N_gen=counters['Total_L0'], N_sel=counters[trigger])
 
-    for trigger in HLT2_list + ['Total_HLT2']:
+    for trigger in HLT2_list + ['Total_HLT2', 'my_HLT2']:
         efficiencies[trigger] = Efficiency(N_gen=counters['Total_HLT1'], N_sel=counters[trigger])
 
     return efficiencies
@@ -125,9 +132,9 @@ if __name__ == '__main__':
 
     if args.all:
         if args.onData:
-            inFile_name = '/afs/cern.ch/user/g/gdujany/work/LHCb/LFV/store/data2012.root'
+            inFile_name = '/afs/cern.ch/user/g/gdujany/work/LHCb/LFV/store/data2012_triggerNotApplied.root'
         else:
-         inFile_name = '/afs/cern.ch/user/g/gdujany/work/LHCb/LFV/store/tau2PhiMuFromPDs.root'
+         inFile_name = '/afs/cern.ch/user/g/gdujany/work/LHCb/LFV/store/tau2PhiMu_triggerNotApplied.root'
 
         inFile = TFile(inFile_name)
         tree = inFile.Get('DecayTreeTuple/DecayTree')

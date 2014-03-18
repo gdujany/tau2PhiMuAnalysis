@@ -1,3 +1,6 @@
+#Plots
+*plots*/*
+
 #emacs backup files
 *~
 
@@ -5,6 +8,7 @@
 
 # C extensions
 *.so
+*.d
 
 # Packages
 *.egg

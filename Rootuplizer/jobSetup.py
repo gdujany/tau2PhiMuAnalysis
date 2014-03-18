@@ -1,5 +1,7 @@
 ############################################################
 ##  JOB OPTIONS ##
+#
+# works with ganga v600r19 (later versions can have troubles with splitting data because too many files)
 
 # Class container with various options
 
@@ -7,7 +9,11 @@ decNumbers = dict( tau2PhiMuFromBD = 21513006,
                    tau2PhiMuFromPD = 21513007,
                    tau2PhiMuFromBDs = 23513006,
                    tau2PhiMuFromPDs = 23513007,
-                   tau2PhiMuFromB = 31113045 )
+                   tau2PhiMuFromB = 31113045,
+                   Ds2PhiMuNu = 23573003,
+                   DsIncl = 23960000,
+                   #DIncl = 21960000,
+                   )
 
 MagString = dict(mu = 'MagUp', md = 'MagDown')
     
@@ -25,23 +31,26 @@ class VariousOptions:
 
 
 class VariousOptionsMC(VariousOptions):
-    def __init__(self, name, MagnetPolarity, input_file=None):
+    def __init__(self, input_file=None,**argd):
         """
         MagnetPolarity in ('mu', 'md')
         """
-        VariousOptions.__init__(self, name, input_file=input_file, isMC=True, isPrescaled=False)
-        self.decNumber = decNumbers[name[:-3]]
+        VariousOptions.__init__(self, input_file=input_file, isMC=True, isPrescaled=False, **argd)
+        self.decNumber = decNumbers[self.name[:-3]]
         if not self.input_file:
-            self.input_file = 'inputFiles/MC/LFN/MC2012'+str(self.decNumber)+'Beam4000GeV-2012-'+MagString[MagnetPolarity]+'-Nu25-Pythia6Sim08cDigi13Trig0x409f0045Reco14aStripping20NoPrescalingFlaggedSTREAMSDST.py'
+            ac = 'a' if 'DsIncl' in self.name else 'c'
+            self.input_file = 'inputFiles/MC/LFN/MC2012'+str(self.decNumber)+'Beam4000GeV-2012-'+MagString[self.MagnetPolarity]+'-Nu25-Pythia6Sim08'+ac+'Digi13Trig0x409f0045Reco14aStripping20NoPrescalingFlaggedSTREAMSDST.py'
 ############################################################
 # Options for various datasets
 dataSamples = {}
 
-MC_list = ['tau2PhiMuFromBD', 'tau2PhiMuFromPD', 'tau2PhiMuFromBDs', 'tau2PhiMuFromPDs', 'tau2PhiMuFromB']
+MC_list = ['tau2PhiMuFromBD', 'tau2PhiMuFromPD', 'tau2PhiMuFromBDs', 'tau2PhiMuFromPDs', 'tau2PhiMuFromB']#, 'Ds2PhiMuNu', 'DsIncl']
 
 for mc_type in MC_list:
     for MagnetPolarity in ('mu', 'md'):
         dataSamples[mc_type+'_'+MagnetPolarity] = VariousOptionsMC(name = mc_type+'_'+MagnetPolarity, MagnetPolarity = MagnetPolarity)
+
+
 
 for MagnetPolarity in ('mu', 'md'):
     dataSamples['data2012_'+MagnetPolarity] = VariousOptions(
@@ -49,14 +58,17 @@ for MagnetPolarity in ('mu', 'md'):
         input_file = 'inputFiles/data/LFN/LHCbCollision1290000000Beam4000GeV-VeloClosed-'+MagString[MagnetPolarity]+'RealDataReco14Stripping20DIMUONDST.py')
 
 # list of datasamples to be analized
-toAnalize = [dataSample for key, dataSample in dataSamples.items() if key[:-3] in MC_list]
-toAnalize += [dataSamples['data2012_mu'], dataSamples['data2012_md']]
+#toAnalize = [dataSample for key, dataSample in dataSamples.items() if key[:-3] in MC_list]
+#toAnalize += [dataSamples['data2012_mu'], dataSamples['data2012_md']]
+#toAnalize = [dataSamples['data2012_md'], dataSamples['data2012_mu']]
+#toAnalize = toAnalize[-2:-1]
 
 # For test
 #toAnalize =  [dataSamples['tau2PhiMuFromPDs_mu']]
 # dataSamples['data2012_md'].isPrescaled = False
 # toAnalize = [dataSamples['data2012_md']]
-
+# toAnalize = [dataSamples['Ds2PhiMuNu_mu'], dataSamples['Ds2PhiMuNu_md']]
+#toAnalize = [dataSamples['DsIncl_mu'], dataSamples['DsIncl_md']]
 
 
 dataSample = toAnalize[0]
@@ -64,7 +76,7 @@ dataSample = toAnalize[0]
 # General options
 isGrid = True #False
 isStoreInCastor = False
-nEvents = -1 #1000
+nEvents = -1#1000
 
 #toAnalize = dataSamples.values()
 
@@ -86,11 +98,12 @@ if __name__ == '__main__':
         j = Job( application = DaVinci( version = 'v33r8' ) )
         j.application.optsfile += [File('Rootuplizer.py')]
         j.application.optsfile += [File(dataSample.input_file)]
+        #j.inputdata = j.application.readInputData(dataSample.input_file)
         j.inputsandbox += ['dataSample.txt']
         j.name = dataSample.name
         if isGrid:
             j.backend = Dirac()
-            j.splitter = SplitByFiles ( filesPerJob = filesPerJob, bulksubmit=True )
+            j.splitter = SplitByFiles(filesPerJob = filesPerJob, bulksubmit=True )
             if isStoreInCastor:
                 j.outputfiles += [MassStorageFile(dataSample.outputNtupleName)] #Like this it will ends up in my castor area $CASTORHOME/ganga/<job#>/<subjob#>/
             else:

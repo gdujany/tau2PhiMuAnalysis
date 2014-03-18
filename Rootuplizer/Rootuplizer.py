@@ -97,7 +97,7 @@ tau_sequence = SelectionSequence('SeqTau2PhiMu',
 ## Make tuple
 ############################################################
 
-from Configurables import FitDecayTrees, DecayTreeTuple, TupleToolDecayTreeFitter, TupleToolDecay, TupleToolTrigger, TupleToolTISTOS, TupleToolPropertime, PropertimeFitter, TupleToolKinematic, TupleToolGeometry, TupleToolEventInfo, TupleToolPrimaries, TupleToolPid, TupleToolTrackInfo, TupleToolRecoStats, TupleToolMCTruth, TupleToolMCBackgroundInfo, LoKi__Hybrid__TupleTool
+from Configurables import FitDecayTrees, DecayTreeTuple, TupleToolDecayTreeFitter, TupleToolDecay, TupleToolTrigger, TupleToolTISTOS, TupleToolPropertime, PropertimeFitter, TupleToolKinematic, TupleToolGeometry, TupleToolEventInfo, TupleToolPrimaries, TupleToolPid, TupleToolTrackInfo, TupleToolRecoStats, TupleToolMCTruth, TupleToolMCBackgroundInfo, LoKi__Hybrid__TupleTool, LoKi__Hybrid__EvtTupleTool
 from DecayTreeTuple.Configuration import *
 
 
@@ -108,23 +108,34 @@ tuple.ToolList = ['TupleToolKinematic',
                   'TupleToolEventInfo',
                   'TupleToolTrackInfo',
                   'TupleToolPid',
-                  #'TupleToolTrackIsolation',
-                  #'TupleToolTrigger',
-                  #'TupleToolAngles',
-                  #'TupleToolPropertime',
-                  #'TupleToolP2VV',
-                  #"TupleToolTISTOS",
+                  'TupleToolGeometry', 
+                  'TupleToolAngles', # Helicity angle
+                  #'TupleToolP2VV', # various angles, not useful in my analysis because only default values
+                  'TupleToolPropertime', #proper time TAU of reco particles
+                  #'TupleToolPrimaries', #num primary vertices and coords
                   ]
 
-# tuple.addTupleTool("LoKi::Hybrid::TupleTool/LoKi_All")
-# tuple.LoKi_All.Variables = {'P2' : 'P*P',}
+# Track isolation
+tuple.addTupleTool('TupleToolTrackIsolation/TrackIsolation')
+tuple.TrackIsolation.MinConeAngle = 0.5
+tuple.TrackIsolation.MaxConeAngle = 1.
+tuple.TrackIsolation.StepSize = 0.1
 
-if dataSample.isMC:
-    from Configurables import MCDecayTreeTuple, MCTupleToolKinematic, TupleToolMCTruth
-    tuple.addTupleTool('TupleToolMCTruth/MCTruth')
-    tuple.MCTruth.ToolList = ['MCTupleToolKinematic',
-                      ]
-    #tuple.addTupleTool( "TupleToolMCBackgroundInfo")
+# Other event infos
+tuple.addTupleTool('LoKi::Hybrid::EvtTupleTool/LoKi_Evt')
+tuple.LoKi_Evt.VOID_Variables = {
+    "nSPDHits" :  " CONTAINS('Raw/Spd/Digits')  " ,
+    'nTracks' :  " CONTAINS ('Rec/Track/Best') "  ,
+    }
+
+# Other variables
+tuple.addTupleTool('LoKi::Hybrid::TupleTool/LoKi_All')
+tuple.LoKi_All.Variables = {
+    'BPVIPCHI2' : 'BPVIPCHI2()',
+    'BPVDIRA' : 'BPVDIRA',
+    'BPVLTFITCHI2' : 'BPVLTFITCHI2()',
+    } 
+
 
 branches = {'Tau' : '[tau- -> (phi(1020) -> K+ K-) mu-]CC', #automatically choose the head
             'Phi' : '[tau- -> ^(phi(1020) -> K+ K-) mu-]CC',
@@ -136,48 +147,44 @@ tuple.addBranches(branches)
 
 tuple.Tau.addTupleTool("LoKi::Hybrid::TupleTool/LoKi_Tau")
 tuple.Tau.LoKi_Tau.Variables =  {
-    "DMASS" : "DMASS('tau-')",
-    "BPVDIRA" : "BPVDIRA",
-    "IPS_Tau" : "MIPCHI2DV(PRIMARY)",
-    "VFASPF_VCHI2" : "VFASPF(VCHI2)",
-    "VFASPF_CHI2DOF" : "VFASPF(VCHI2/VDOF)",
-    "CTAU" : "BPVLTIME () * c_light",
-    "BPVIPCHI2" : "BPVIPCHI2()",
-
+    'DMASS' : "DMASS('tau-')",
+    'IPS_Tau' : 'MIPCHI2DV(PRIMARY)',
+    'VFASPF_VCHI2' : 'VFASPF(VCHI2)',
+    'VFASPF_CHI2DOF' : 'VFASPF(VCHI2/VDOF)',
+    'CTAU' : 'BPVLTIME () * c_light',
+    'ADOCA_12' : 'DOCA(1,2)',
+    'BPVVDZ' : 'BPVVDZ',
+    'BPVVDR' : 'BPVVDR',
     }
 
-tuple.Phi.addTupleTool("LoKi::Hybrid::TupleTool/LoKi_Phi")
+tuple.Phi.addTupleTool('LoKi::Hybrid::TupleTool/LoKi_Phi')
 tuple.Phi.LoKi_Phi.Variables =  {
     'DMASS' : "DMASS('phi(1020)')",
-    'VFASPF_VCHI2' : 'VFASPF(VCHI2)',
-    'MIPCHI2DV_PRIMARY' : 'MIPCHI2DV(PRIMARY)',
-
-#    'M_KK1' : "CHILD(M,1)",#+CHILD(PE,2))^2",# - (CHILD(PX,1)+CHILD(PX,2))^2 - (CHILD(PY,1)+CHILD(PY,2))^2 -(CHILD(PZ,1)+CHILD(PZ,2))^2 ",
-#    'M_KK2' : "AM"
+    'VCHI2' : 'VFASPF(VCHI2)',
+    'VCHI2NDOF' : 'VFASPF(VCHI2/VDOF)',
+    'VPCHI2' : 'VFASPF(VPCHI2)',
+    'MIPCHI2DV' : 'MIPCHI2DV(PRIMARY)',
+    'MIPDV' : 'MIPDV(PRIMARY)',
+    'ADOCA_12' : 'DOCA(1,2)',
     }
 
-tuple.Mu.addTupleTool("LoKi::Hybrid::TupleTool/LoKi_Mu")
+tuple.Mu.addTupleTool('LoKi::Hybrid::TupleTool/LoKi_Mu')
 tuple.Mu.LoKi_Mu.Variables =  {
-    'LoKi_PT' : 'PT',
-    'BPVIPCHI2' : 'BPVIPCHI2()',
     'TRCHI2DOF' : 'TRCHI2DOF',
     'TRGHOSTPROB' : 'TRGHOSTPROB',
     }
 
 def mySharedConf(branch):
-  atool=branch.addTupleTool("LoKi::Hybrid::TupleTool/LoKi_K")
+  atool=branch.addTupleTool('LoKi::Hybrid::TupleTool/LoKi_K')
   atool.Variables =  {
-      'LoKi_PT' : 'PT',
       'TRCHI2DOF' : 'TRCHI2DOF',
       'TRGHOSTPROB' : 'TRGHOSTPROB',
-      'BPVIPCHI2' : 'BPVIPCHI2()',
       }
 
 mySharedConf(tuple.KPlus)
 mySharedConf(tuple.KMinus)
 
 # Decay Tree fitter
-
 variables_All = ('M', 'MM', 'P', 'PT', 'E', 'PX', 'PY', 'PZ')
 particles_functors = {'Tau' : '{}',
                       'Phi' : 'CHILD({}, 1)',
@@ -202,9 +209,11 @@ tuple.Tau.LoKi_DTF.Variables.update({
     })
 
 # Triggers:
-L0_list = ['L0HadronDecision', 'L0MuonDecision', 'L0DiMuonDecision']
+#L0_list = ['L0HadronDecision', 'L0MuonDecision', 'L0DiMuonDecision']
+L0_list = ['L0MuonDecision']
 HLT1_list = ['Hlt1TrackAllL0Decision', 'Hlt1TrackMuonDecision']
-HLT2_list = ['Hlt2CharmHadD2HHHDecision', 'Hlt2IncPhiDecision', 'Hlt2SingleMuonDecision', 'Hlt2CharmHadLambdaC2KPKDecision', 'Hlt2CharmHadLambdaC2KPPiDecision', 'Hlt2TopoMu3BodyBBDTDecision']
+HLT2_list = ['Hlt2CharmHadD2HHHDecision', 'Hlt2IncPhiDecision']
+#HLT2_list = ['Hlt2CharmHadD2HHHDecision', 'Hlt2IncPhiDecision', 'Hlt2SingleMuonDecision', 'Hlt2CharmHadLambdaC2KPKDecision', 'Hlt2CharmHadLambdaC2KPPiDecision', 'Hlt2TopoMu3BodyBBDTDecision']
 
 tuple.Tau.addTupleTool('TupleToolTISTOS/TISTOS')
 tuple.Tau.TISTOS.VerboseL0   = True
@@ -213,8 +222,15 @@ tuple.Tau.TISTOS.VerboseHlt2 = True
 tuple.Tau.TISTOS.TriggerList = L0_list + HLT1_list + HLT2_list
 
 
+if dataSample.isMC:
+    from Configurables import MCDecayTreeTuple, MCTupleToolKinematic, TupleToolMCTruth
+    tuple.addTupleTool('TupleToolMCTruth/MCTruth')
+    tuple.MCTruth.ToolList = ['MCTupleToolKinematic',
+                      ]
+    tuple.Tau.addTupleTool( "TupleToolMCBackgroundInfo")
 
-## Still have to add triggers and MC-match
+
+## Still have to add MC-match
 
 if dataSample.isMC:
     mcTuple = MCDecayTreeTuple() # I can put as an argument a name if I use more than a MCDecayTreeTuple
@@ -228,6 +244,8 @@ if dataSample.isMC:
     ## Still have to add triggers
 
     mcTuple.Decay = dec
+    # if 'Ds2PhiMuNu' in dataSample.name:
+    #     mcTuple.Decay = dec = '[D_s- -> ^(phi(1020) -> ^K+ ^K-) ^mu- ^nu_mu~]CC'
 
 
 ############################################################
@@ -251,6 +269,16 @@ if dataSample.isMC: DaVinci().UserAlgorithms += [mcTuple]
 #MySequencer = GaudiSequencer('Sequence')
 #MySequencer.Members = [ strippingFilter, tau_sequence.sequence(), tuple ]
 #DaVinci().appendToMainSequence(MySequencer)
+
+##Debug Background#
+# from Configurables import PrintMCTree, PrintMCDecayTreeTool
+# mctree = PrintMCTree("PrintDs")
+# mctree.addTool(PrintMCDecayTreeTool, name = "PrintMC")
+# mctree.PrintMC.Information = "Name M P Px Py Pz Pt"
+# mctree.ParticleNames = [ "D_s+", "D_s-"]
+# mctree.Depth = 3
+# tau_sequence.sequence().Members += [ mctree ] 
+##################
 
 tau_sequence.sequence().Members += [tuple]
 DaVinci().appendToMainSequence( [ tau_sequence.sequence() ])

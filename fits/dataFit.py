@@ -23,8 +23,6 @@ import sys
 sys.path.append('..')
 from fits import makeRooDataset
 
-print 'qui'
-sys.exit()
 
 gROOT.SetBatch()
 
@@ -95,8 +93,7 @@ def doDataFit(dataSet, w, x_var, addTitlePlot=''):
     sgn_name = 'DSCB'
     signal = w.pdf(sgn_name)
 
-
-    # Background
+    # Combinatorial Background
     if withD:
         w.factory('''RooChebychev::background('''+x_var+''',
         {a1[-0.5,-1,1],
@@ -107,24 +104,69 @@ def doDataFit(dataSet, w, x_var, addTitlePlot=''):
         w.factory('''RooPolynomial::background('''+x_var+''',
         {a1[params2[1],params2[1]*0.5,params2[1]*1.5],
         a2[params2[2],params2[2]*0.5,params2[2]*1.5],
-        a3[params2[3],params2[3]*0.5,params2[3]*1.5]}
+        a3[params2[3]],params2[3]*0.5,params2[3]*1.5]}
         )''')
         
-    # Toghether
+
+    # D peak
     if withD:
         w.factory('''RooCBShape::Dpeak({0},
         mean_D[1860,1830,1890],
         sigma_D[7,0,15],
         alpha_D[0.5,0,5],
         n_D[3]
-        )'''.format(x_var))
+        )'''.format(x_var))# Combinatorial Background
+    
 
+    # Toghether
     w.factory('''SUM::modelPdf(
-    n_sig[5, 0, 100] * {0},
+    n_sig[5, -100, 100] * {0},
     n_bkg[10000000, 0, 10000000000] * background
     {1})'''.format(sgn_name,
                 ',n_Dpeak[100000, 0, 100000000] * Dpeak' if withD else ''))
     modelPdf = w.pdf('modelPdf')
+
+    # parameters = ['a1', 'a2', 'a3', 'n_sig', 'n_bkg']
+    # if withD:
+    #     parameters.extend(['mean_D', 'sigma_D', 'alpha_D', 'n_Dpeak'])
+    # for prm in parameters:
+    #     w.var(prm).setConstant(False)
+
+
+    for prm in ['n_sig', 'n_bkg', 'n_Dpeak']:
+        w.var(prm).setConstant(False)
+    
+
+    # ## Backup
+    # # Background
+    # if withD:
+    #     w.factory('''RooChebychev::background('''+x_var+''',
+    #     {a1[-0.5,-1,1],
+    #     a2[-0.1,-1,1],
+    #     a3[0.05,-1,1]}
+    #     )''')
+    # else:
+    #     w.factory('''RooPolynomial::background('''+x_var+''',
+    #     {a1[params2[1],params2[1]*0.5,params2[1]*1.5],
+    #     a2[params2[2],params2[2]*0.5,params2[2]*1.5],
+    #     a3[params2[3],params2[3]*0.5,params2[3]*1.5]}
+    #     )''')
+        
+    # # Toghether
+    # if withD:
+    #     w.factory('''RooCBShape::Dpeak({0},
+    #     mean_D[1860,1830,1890],
+    #     sigma_D[7,0,15],
+    #     alpha_D[0.5,0,5],
+    #     n_D[3]
+    #     )'''.format(x_var))
+
+    # w.factory('''SUM::modelPdf(
+    # n_sig[5, 0, 100] * {0},
+    # n_bkg[10000000, 0, 10000000000] * background
+    # {1})'''.format(sgn_name,
+    #             ',n_Dpeak[100000, 0, 100000000] * Dpeak' if withD else ''))
+    # modelPdf = w.pdf('modelPdf')
         
 
     # Fit
@@ -170,6 +212,8 @@ if __name__ == '__main__':
     else:
         DTF_label = ''
         x_var = 'Tau_M'
+
+    addTitlePlot = ''
     ##########################
         
     # Make Dataset
