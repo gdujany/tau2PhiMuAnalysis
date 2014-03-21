@@ -155,6 +155,9 @@ tuple.Tau.LoKi_Tau.Variables =  {
     'ADOCA_12' : 'DOCA(1,2)',
     'BPVVDZ' : 'BPVVDZ',
     'BPVVDR' : 'BPVVDR',
+    'CTAU_FITPV' : "DTF_CTAU('tau-', True)",
+    'CTAUERR_FITPV' : "DTF_CTAUERR('tau-', True)",
+    'CTAUSIGNIFICANCE_FITPV' : "DTF_CTAUSIGNIFICANCE('tau-', True)",
     }
 
 tuple.Phi.addTupleTool('LoKi::Hybrid::TupleTool/LoKi_Phi')

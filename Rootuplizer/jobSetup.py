@@ -1,4 +1,4 @@
-############################################################
+ ############################################################
 ##  JOB OPTIONS ##
 #
 # works with ganga v600r19 (later versions can have troubles with splitting data because too many files)
@@ -58,8 +58,8 @@ for MagnetPolarity in ('mu', 'md'):
         input_file = 'inputFiles/data/LFN/LHCbCollision1290000000Beam4000GeV-VeloClosed-'+MagString[MagnetPolarity]+'RealDataReco14Stripping20DIMUONDST.py')
 
 # list of datasamples to be analized
-#toAnalize = [dataSample for key, dataSample in dataSamples.items() if key[:-3] in MC_list]
-#toAnalize += [dataSamples['data2012_mu'], dataSamples['data2012_md']]
+toAnalize = [dataSample for key, dataSample in dataSamples.items() if key[:-3] in MC_list]
+toAnalize += [dataSamples['data2012_mu'], dataSamples['data2012_md']]
 #toAnalize = [dataSamples['data2012_md'], dataSamples['data2012_mu']]
 #toAnalize = toAnalize[-2:-1]
 
@@ -76,7 +76,7 @@ dataSample = toAnalize[0]
 # General options
 isGrid = True #False
 isStoreInCastor = False
-nEvents = -1#1000
+nEvents = -1 #1000
 
 #toAnalize = dataSamples.values()
 

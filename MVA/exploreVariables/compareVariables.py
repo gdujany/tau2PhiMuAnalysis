@@ -8,6 +8,7 @@ def getHisto(tree, var,region=None, expr=None, cut=''):
     cuts = []
     if cut != '': cuts.append(cut)
     #cuts += ['Mu_ProbNNmu-1.33*Mu_ProbNNpi>0.6']
+    cuts += ['(Tau_M<1800 || Tau_M>1890)']
     if region: cuts += [expr+'>'+str(region[0]), expr+'<'+str(region[1])]
     cut_string = ' && '.join(cuts)
     tree.Draw(expr+'>>'+var, cut_string)
