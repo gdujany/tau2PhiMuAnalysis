@@ -4,7 +4,7 @@ from ROOT import TFile, TTree
 import os
 
 store_dir = '/afs/cern.ch/user/g/gdujany/work/LHCb/LFV/store/'
-inFile_names = ['data2012.root']#, 'tau2PhiMu.root']
+inFile_names = ['tau2PhiMu.root']#,'data2012.root'],# 'tau2PhiMu.root']
 inFile_names = [store_dir+name for name in inFile_names]
 
 triggers = ['L0Global_TIS', 'L0MuonDecision_TOS', 'Hlt1TrackAllL0Decision_TOS', 'Hlt1TrackMuonDecision_TOS', 'Hlt2CharmHadD2HHHDecision_TOS', 'Hlt2IncPhiDecision_TOS']

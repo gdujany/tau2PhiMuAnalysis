@@ -29,7 +29,7 @@ if __name__ == '__main__':
     args.all = True
 
     if args.all:
-        inFile_name = '/afs/cern.ch/user/g/gdujany/work/LHCb/LFV/store/tau2PhiMuFromPDs.root'
+        inFile_name = '/afs/cern.ch/user/g/gdujany/work/LHCb/LFV/store/tau2PhiMu_triggerNotApplied.root'
         inFile = TFile(inFile_name)
         tree_sel = inFile.Get('DecayTreeTuple/DecayTree')
         tree_gen = inFile.Get('MCDecayTreeTuple/MCDecayTree')

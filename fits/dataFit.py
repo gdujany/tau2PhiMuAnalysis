@@ -119,11 +119,18 @@ def doDataFit(dataSet, w, x_var, addTitlePlot=''):
     
 
     # Toghether
+    # w.factory('''SUM::modelPdf(
+    # n_sig[5, -100, 100] * {0},
+    # n_bkg[10000000, 0, 10000000000] * background
+    # {1})'''.format(sgn_name,
+    #             ',n_Dpeak[100000, 0, 100000000] * Dpeak' if withD else ''))
+    # modelPdf = w.pdf('modelPdf')
+
     w.factory('''SUM::modelPdf(
-    n_sig[5, -100, 100] * {0},
-    n_bkg[10000000, 0, 10000000000] * background
+    n_sig[0] * {0},
+    n_bkg[300000] * background
     {1})'''.format(sgn_name,
-                ',n_Dpeak[100000, 0, 100000000] * Dpeak' if withD else ''))
+                ',n_Dpeak[30000] * Dpeak' if withD else ''))
     modelPdf = w.pdf('modelPdf')
 
     # parameters = ['a1', 'a2', 'a3', 'n_sig', 'n_bkg']
@@ -131,7 +138,6 @@ def doDataFit(dataSet, w, x_var, addTitlePlot=''):
     #     parameters.extend(['mean_D', 'sigma_D', 'alpha_D', 'n_Dpeak'])
     # for prm in parameters:
     #     w.var(prm).setConstant(False)
-
 
     for prm in ['n_sig', 'n_bkg', 'n_Dpeak']:
         w.var(prm).setConstant(False)
@@ -174,12 +180,12 @@ def doDataFit(dataSet, w, x_var, addTitlePlot=''):
         fit_region = x.setRange('fit_region',1630,1900)#1747,1807)
     else:
         fit_region = x.setRange('fit_region',1630,1810)#1747,1807)
-    result = modelPdf.fitTo(dataSet, RooFit.Save(), RooFit.Range('fit_region'))
+    result = modelPdf.fitTo(data, RooFit.Save(), RooFit.Range('fit_region'), RooFit.NumCPU(2), RooFit.Minos())
    
     # Frame
     frame = x.frame(RooFit.Title(' Combined mass KK#mu '+addTitlePlot))
     dataSet.plotOn(frame)
-    modelPdf.plotOn(frame,RooFit.Components(sgn_name), RooFit.LineColor(ROOT.kGreen+2), RooFit.LineStyle(2), RooFit.LineWidth(1))
+    ##modelPdf.plotOn(frame,RooFit.Components(sgn_name), RooFit.LineColor(ROOT.kGreen+2), RooFit.LineStyle(2), RooFit.LineWidth(1))
     if withD:
         modelPdf.plotOn(frame,RooFit.Components('Dpeak'), RooFit.LineColor(ROOT.kRed), RooFit.LineStyle(2), RooFit.LineWidth(1))
     modelPdf.plotOn(frame,RooFit.Components('background'), RooFit.LineColor(ROOT.kBlack), RooFit.LineStyle(2), RooFit.LineWidth(1))
@@ -225,5 +231,7 @@ if __name__ == '__main__':
     # Make fit
     w = TFile('pickles/signalShape'+DTF_label+'.root').Get('w')
     dataSet = TFile('RooDataSets/rooDataSet.root').Get('taus')
+    cuts_str = ''#'(Mu_ProbNNmu - 4./3.*Mu_ProbNNpi) > 0.6'
+    dataSet = dataSet.reduce( RooFit.Cut(cuts_str) )
     w, c1 = doDataFit(dataSet, w, x_var, addTitlePlot)
     c1.Print('plots/plotDataFit'+DTF_label+'.pdf')

@@ -43,10 +43,15 @@ def doMCFit(dataSet, x_var, addTitlePlot=''):
     w.factory('''RooDSCBShape::DSCB({0},
     #mu[1777, 1760,1790],
     #sigma[5,0,10],
-    #alpha[1.4], n[10, 0.1, 100],
+    #alpha[1.2], n[50, 1, 150],
     #alpha, n
     )'''.format(x_var))
+    #w.var('n').setConstant(False)
     signal = w.pdf('DSCB')
+    # w.factory('''RooGaussian::GG({0},
+    # #mu, #sigma
+    # )'''.format(x_var))
+    # signal = w.pdf('GG')
   
     # Fit
     fit_region = x.setRange('fit_region',1757,1797)
@@ -93,7 +98,7 @@ if __name__ == '__main__':
     # Make Dataset
     if args.dataset:
         print 'Making RooDataSet'
-        dataSet = makeRooDataset('/afs/cern.ch/work/g/gdujany/LHCb/LFV/store/tau2PhiMuFromPDs.root')
+        dataSet = makeRooDataset('/afs/cern.ch/work/g/gdujany/LHCb/LFV/store/tau2PhiMu.root')#_triggerNotApplied.root')
         dataSet.SaveAs('RooDataSets/rooDataSet_MC.root')
     
     # Make fit

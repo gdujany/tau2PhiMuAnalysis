@@ -151,7 +151,7 @@ tuple.Tau.LoKi_Tau.Variables =  {
     'IPS_Tau' : 'MIPCHI2DV(PRIMARY)',
     'VFASPF_VCHI2' : 'VFASPF(VCHI2)',
     'VFASPF_CHI2DOF' : 'VFASPF(VCHI2/VDOF)',
-    'CTAU' : 'BPVLTIME () * c_light',
+    'CTAU' : 'BPVLTIME() * c_light',
     'ADOCA_12' : 'DOCA(1,2)',
     'BPVVDZ' : 'BPVVDZ',
     'BPVVDR' : 'BPVVDR',
@@ -239,7 +239,8 @@ if dataSample.isMC:
     mcTuple = MCDecayTreeTuple() # I can put as an argument a name if I use more than a MCDecayTreeTuple
     #mcTuple.Inputs = [ tau_sequence.outputLocation() ]
     mcTuple.ToolList = ['MCTupleToolKinematic',
-                        'TupleToolEventInfo'
+                        'TupleToolEventInfo',
+                        'MCTupleToolHierarchy',
                       ]
     mcTuple.addBranches(branches)
 

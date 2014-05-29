@@ -76,6 +76,7 @@ if __name__ == '__main__':
     variables += ['Phi_cp_0.50', 'Phi_cpt_0.50', 'Phi_cmult_0.50', 'Phi_cp_1.00', 'Phi_cpt_1.00', 'Phi_cmult_1.00']
     variables += ['Mu_cp_0.50', 'Mu_cpt_0.50', 'Mu_cmult_0.50', 'Mu_cp_1.00', 'Mu_cpt_1.00', 'Mu_cmult_1.00']
     variables += ['KPlus_cp_0.50', 'KPlus_cpt_0.50', 'KPlus_cmult_0.50', 'KPlus_cp_1.00', 'KPlus_cpt_1.00', 'KPlus_cmult_1.00']
+    variables += ['Tau_CTAU', 'Tau_CTAU_FITPV', 'Tau_CTAUERR_FITPV', 'Tau_CTAUSIGNIFICANCE_FITPV']
 
     variables = variables[:]
     
@@ -140,6 +141,11 @@ if __name__ == '__main__':
     region['KPlus_cp_1.00'] = (0, 300000)
     region['KPlus_cpt_1.00'] = (0, 30000)
     region['KPlus_cmult_1.00'] = (0, 50)
+
+    region['Tau_CTAU'] = (0, 3)
+    region['Tau_CTAU_FITPV'] = (0, 3)
+    region['Tau_CTAUERR_FITPV'] = (0, 0.06)
+    region['Tau_CTAUSIGNIFICANCE_FITPV'] = (0, 200)
 
         
     for var in variables:

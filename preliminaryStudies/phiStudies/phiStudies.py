@@ -11,7 +11,7 @@ if __name__ == '__main__':
 ##########################
 
 sample = 'data2012'
-#sample = 'tau2PhiMuFromPDs'
+#sample = 'tau2PhiMu'
 
 from ROOT import gSystem
 gSystem.Load('../../PDFs/RooRelBreitWigner_cxx')
@@ -53,6 +53,7 @@ def makeFit(dataSet, x_var):
     w = RooWorkspace('w')
     x = w.factory(x_var+'[1008,1032]')
     x.setUnit('MeV')
+    x.SetTitle('m_{kk}')
     x.setBins(200)
     # x = RooRealVar(x_var, 'm_{#Phi}', 1008,1032, 'MeV')
     # #x = RooRealVar(x_var, 'm_{#Phi}', 1010,1027, 'MeV')
@@ -62,34 +63,69 @@ def makeFit(dataSet, x_var):
     
     
     # Signal
-    signal = w.factory('''RooRelBreitWigner::signal('''+x_var+''',
+    # signal = w.factory('''RooRelBreitWigner::signal('''+x_var+''',
+    # #mu[1020,1010,1025],
+    # #Gamma[3,0.1,10],
+    # J[1], radius[0.003],
+    # m_K[493.677],m_K
+    # )''')
+
+    # signal = w.factory('''RooRelBreitWigner::signal('''+x_var+''',
+    # #mu[1020,1010,1025],
+    # #Gamma[3,0.1,10],
+    # J[1], radius[0.003, 0., 0.1],
+    # m_K[493.677, 450, 550],m_K
+    # )''')
+
+    # signal = w.factory('''RooBreitWigner::signal('''+x_var+''',
+    # #mu[1020,1010,1025],
+    # #Gamma[3,0.1,10]
+    # )''')
+
+    # signal = w.factory('''RooVoigtian::signal('''+x_var+''',
+    # #mu[1020,1010,1025],
+    # #Gamma[3,0.1,10],
+    # #sigma[3,0.1,10]
+    # )''')
+
+    w.factory('''RooRelBreitWigner::T('''+x_var+''',
     #mu[1020,1010,1025],
-    #Gamma[3,0.1,10],
+    #Gamma[4,0.1,10],
     J[1], radius[0.003],
     m_K[493.677],m_K
     )''')
+
+    w.factory('''RooGaussian::R('''+x_var+''',
+    m_r[0],
+    #sigma[2,0.1,10]
+    )''')
+
+    x.setBins(10000,'cache')
+
+    signal = w.factory('FCONV::signal('+x_var+',T,R)')
     
     
 
     # Background
-    a1 = RooRealVar('a0','a0',0.1,0.,1.)
-    #a2 = RooRealVar('a1','a1',0.1,-1.,1.) #-0.2,0.,1.)
-    #a3 = RooRealVar('a2','a2',-0.1,1.,-1.)
+    a1 = RooRealVar('a1','a1',0.4,0.,1.)
+    #a2 = RooRealVar('a2','a2',0.1,-1.,1.) #-0.2,0.,1.)
+    #a3 = RooRealVar('a3','a3',-0.1,1.,-1.)
     esp = RooRealVar('esp','esp',0.,-0.5,0.5) #,0.5,0.,1.)
     xm = RooFormulaVar('xm','@0-1010',RooArgList(x))
-    #background = RooPolynomial('background','Background',xm,RooArgList(a1))
+    background = RooPolynomial('background','Background',xm,RooArgList(a1))
     #background = RooPolynomial('background','Background',xm,RooArgList())
-    background = RooExponential('background','Background',x,esp)
+    #background = RooExponential('background','Background',x,esp)
     getattr(w,'import')(background)
    
     # Toghether
     w.factory('''SUM::modelPdf(
-    ratio_SB[0.7, 0, 1] * signal,
+    ratio_SB[0.8, 0, 1] * signal,
     background)''')
     modelPdf = w.pdf('modelPdf')
+    #modelPdf = w.pdf('signal')
     
     # Fit
-    fit_region = x.setRange("fit_region",1013,1027)
+    fit_region = x.setRange("fit_region",1011,1027)#1013,1027)
     result = modelPdf.fitTo(dataSet, RooFit.Save(), RooFit.Range("fit_region"))
 
     # Frame
@@ -149,6 +185,7 @@ def makeFit(dataSet, x_var):
 
 
 def plotPDF():
+
 
     gStyle.SetOptFit(1111)
     x_var = 'Tau_DTF_Phi_M' #'Phi_M'
