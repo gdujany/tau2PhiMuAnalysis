@@ -9,16 +9,17 @@ try:
 except IOError:
     pass # keep dataSample defined in jobSetup.py and loaded with from import *
 
-
-
 #location = '/Event/AllStreams/pPhys/Particles'
 
 line = "LFVLinesTau2PhiMuLine"
+#if dataSample.isNormalization:
+    #line = "D2PhiPiForXSecD2PhiPiLine "
 #line = "BetaSJpsi2MuMuDetachedLine"
 #location = "/Event/Dimuon/Phys/"+line+"/Particles" #check if it's the correct one
 location = "Phys/"+line+"/Particles" #check if it's the correct one
 
 dec = '[tau- -> ^(phi(1020) -> ^K+ ^K-) ^mu-]CC'
+dec_D = '[D- -> ^(phi(1020) -> ^K+ ^K-) ^pi-]CC'
 
 from Gaudi.Configuration import *
 import GaudiKernel.SystemOfUnits as Units
@@ -42,7 +43,9 @@ evtPreselectors = []
 if dataSample.isPrescaled:
     prescaler =  DeterministicPrescaler("Prescaler", AcceptFraction = 0.1)
     evtPreselectors.append(prescaler)
-    
+
+###############
+
 # Stripping filter
 strippingFilter = LoKi__HDRFilter( 'StripPassFilter', Code="HLT_PASS('Stripping"+line+"Decision')", Location="/Event/Strip/Phys/DecReports" )
 evtPreselectors.append(strippingFilter)
@@ -50,35 +53,63 @@ evtPreselectors.append(strippingFilter)
 # Muons and kaons
 looseMuons = DataOnDemand(Location = 'Phys/StdLooseMuons/Particles')
 looseKaons = DataOnDemand(Location = 'Phys/StdLooseKaons/Particles')
+loosePions = DataOnDemand(Location = 'Phys/StdLoosePions/Particles')
 
 
 # Select Phi
 recoPhi = CombineParticles("Phi2KK")
 recoPhi.DecayDescriptor = 'phi(1020) -> K+ K-'
-recoPhi.DaughtersCuts = {"K+": "(ISLONG) & (TRCHI2DOF < 3 ) & (TRGHOSTPROB<0.3) & ( BPVIPCHI2 () >  9 ) & (PT>300*MeV) & (PIDK > 5)"}
+recoPhi.DaughtersCuts = {"K+": "(ISLONG) & (TRCHI2DOF < 3 ) & (TRGHOSTPROB<0.3) & ( BPVIPCHI2 () >  9 ) & (PT>300*MeV) & (PIDK > 5)",
+                         "K-": "(ISLONG) & (TRCHI2DOF < 3 ) & (TRGHOSTPROB<0.3) & ( BPVIPCHI2 () >  9 ) & (PT>300*MeV) & (PIDK > 5)"}
 recoPhi.CombinationCut =  "(ADAMASS('phi(1020)')<10*MeV)"
 recoPhi.MotherCut = " ( VFASPF(VCHI2) < 10 ) & (MIPCHI2DV(PRIMARY)> 16.)"
 
+# Very loose version for testing
+# recoPhi = CombineParticles("Phi2KK")
+# recoPhi.DecayDescriptor = 'phi(1020) -> K+ K-'
+# recoPhi.DaughtersCuts = {"K+": "(ISLONG) & (TRCHI2DOF < 3 ) & (TRGHOSTPROB<0.3) & ( BPVIPCHI2 () >  9 ) & (PT>300*MeV) & (PIDK > -5)",
+#                          "K-": "(ISLONG) & (TRCHI2DOF < 3 ) & (TRGHOSTPROB<0.3) & ( BPVIPCHI2 () >  9 ) & (PT>300*MeV) & (PIDK > -5)"}
+# recoPhi.CombinationCut =  "(ADAMASS('phi(1020)')<35*MeV)"
+# recoPhi.MotherCut = " ( VFASPF(VCHI2) < 25 ) & (MIPCHI2DV(PRIMARY)> 4.)"
+
 
 phi_selection = Selection('SelPhi2KK', Algorithm = recoPhi, RequiredSelections = [ looseKaons ])
-
 
 # Select Tau
 recoTau = CombineParticles("Tau2PhiMu")
 recoTau.DecayDescriptor = '[tau- -> phi(1020) mu-]cc'
 recoTau.DaughtersCuts = { "mu-" : " ( PT > 300 * MeV )  & ( BPVIPCHI2 () >  9 ) & ( TRCHI2DOF < 3 )& (TRGHOSTPROB<0.3)" }
 recoTau.CombinationCut = "(ADAMASS('tau-')<150*MeV)"
-
 recoTau.MotherCut = "( VFASPF(VCHI2) < 10 ) &  ( (BPVLTIME () * c_light)   > 200 * micrometer ) &  ( BPVIPCHI2() < 100 ) "
 
+# Very loose version for testing
+# recoTau = CombineParticles("Tau2PhiMu")
+# recoTau.DecayDescriptor = '[tau- -> phi(1020) mu-]cc'
+# recoTau.DaughtersCuts = { "mu-" : " ( PT > 300 * MeV )  & ( BPVIPCHI2 () >  9 ) & ( TRCHI2DOF < 3 )& (TRGHOSTPROB<0.3)" }
+# recoTau.CombinationCut = "(ADAMASS('tau-')<150*MeV)"
+# recoTau.MotherCut = "( VFASPF(VCHI2) < 25 ) &  ( (BPVLTIME () * c_light)   > 50 * micrometer ) &  ( BPVIPCHI2() < 100 ) "
+
 tau_selection = Selection('SelTau2PhiMu', Algorithm = recoTau, RequiredSelections = [ looseMuons, phi_selection ])
+
+# Select D
+recoD = CombineParticles("D2PhiPi")
+recoD.DecayDescriptor = '[D- -> phi(1020) pi-]cc'
+recoD.DaughtersCuts = { "pi-" : " ( PT > 300 * MeV )  & ( BPVIPCHI2 () >  9 ) & ( TRCHI2DOF < 3 )& (TRGHOSTPROB<0.3)" }
+recoD.CombinationCut = "(ADAMASS('tau-')<150*MeV)"
+recoD.MotherCut = "( VFASPF(VCHI2) < 10 ) &  ( (BPVLTIME () * c_light)   > 200 * micrometer ) &  ( BPVIPCHI2() < 100 ) "
+
+D_selection = Selection('SelD2PhiPi', Algorithm = recoD, RequiredSelections = [ loosePions, phi_selection ])
+
 
 
 tau_sequence = SelectionSequence('SeqTau2PhiMu',
                                  TopSelection = tau_selection,
                                  EventPreSelector = evtPreselectors)
 
-                                 
+
+D_sequence = SelectionSequence('SeqD2PhiPi',
+                                 TopSelection = D_selection,
+                                 EventPreSelector = evtPreselectors)                                 
 
 # ## Per i dati forse funziona:
 
@@ -146,11 +177,28 @@ branches = {'Tau' : '[tau- -> (phi(1020) -> K+ K-) mu-]CC', #automatically choos
 tuple.addBranches(branches)
 
 tuple.Tau.addTupleTool("LoKi::Hybrid::TupleTool/LoKi_Tau")
+numbers_phi_X = [1,2]
+tuple.Tau.LoKi_Tau.Preambulo = [
+        "from LoKiCore.math import sqrt",
+        "Phi_E  = CHILD(E,  {})".format(numbers_phi_X[0]),
+        "Phi_PX = CHILD(PX, {})".format(numbers_phi_X[0]),
+        "Phi_PY = CHILD(PY, {})".format(numbers_phi_X[0]),
+        "Phi_PZ = CHILD(PZ, {})".format(numbers_phi_X[0]),
+        "X_P  = CHILD(P,  {})".format(numbers_phi_X[1]),
+        "X_E_asMu  = sqrt(105.6583715**2 + X_P**2)",
+        "X_E_asPi  = sqrt(139.57018**2 + X_P**2)",
+        "X_PX = CHILD(PX, {})".format(numbers_phi_X[1]),
+        "X_PY = CHILD(PY, {})".format(numbers_phi_X[1]),
+        "X_PZ = CHILD(PZ, {})".format(numbers_phi_X[1]),
+        "PhiMu_M = sqrt( (Phi_E + X_E_asMu)**2 - (Phi_PX + X_PX)**2 - (Phi_PY + X_PY)**2 - (Phi_PZ + X_PZ)**2 )",
+        "PhiPi_M = sqrt( (Phi_E + X_E_asPi)**2 - (Phi_PX + X_PX)**2 - (Phi_PY + X_PY)**2 - (Phi_PZ + X_PZ)**2 )",
+        ]
 tuple.Tau.LoKi_Tau.Variables =  {
     'DMASS' : "DMASS('tau-')",
     'IPS_Tau' : 'MIPCHI2DV(PRIMARY)',
-    'VFASPF_VCHI2' : 'VFASPF(VCHI2)',
-    'VFASPF_CHI2DOF' : 'VFASPF(VCHI2/VDOF)',
+    'VCHI2' : 'VFASPF(VCHI2)',
+    'VCHI2DOF' : 'VFASPF(VCHI2/VDOF)',
+    'VPCHI2' : 'VFASPF(VPCHI2)',
     'CTAU' : 'BPVLTIME() * c_light',
     'ADOCA_12' : 'DOCA(1,2)',
     'BPVVDZ' : 'BPVVDZ',
@@ -158,13 +206,17 @@ tuple.Tau.LoKi_Tau.Variables =  {
     'CTAU_FITPV' : "DTF_CTAU('tau-', True)",
     'CTAUERR_FITPV' : "DTF_CTAUERR('tau-', True)",
     'CTAUSIGNIFICANCE_FITPV' : "DTF_CTAUSIGNIFICANCE('tau-', True)",
+    'CHILD_1_ID' : "CHILD(ID,1)",
+    'CHILD_2_ID' : "CHILD(ID,2)",
+    'PhiMu_M' : 'PhiMu_M',
+    'PhiPi_M' : 'PhiPi_M',
     }
 
 tuple.Phi.addTupleTool('LoKi::Hybrid::TupleTool/LoKi_Phi')
 tuple.Phi.LoKi_Phi.Variables =  {
     'DMASS' : "DMASS('phi(1020)')",
     'VCHI2' : 'VFASPF(VCHI2)',
-    'VCHI2NDOF' : 'VFASPF(VCHI2/VDOF)',
+    'VCHI2DOF' : 'VFASPF(VCHI2/VDOF)',
     'VPCHI2' : 'VFASPF(VPCHI2)',
     'MIPCHI2DV' : 'MIPCHI2DV(PRIMARY)',
     'MIPDV' : 'MIPDV(PRIMARY)',
@@ -229,28 +281,152 @@ if dataSample.isMC:
     from Configurables import MCDecayTreeTuple, MCTupleToolKinematic, TupleToolMCTruth
     tuple.addTupleTool('TupleToolMCTruth/MCTruth')
     tuple.MCTruth.ToolList = ['MCTupleToolKinematic',
-                      ]
+                              'MCTupleToolHierarchy',
+                              ]
     tuple.Tau.addTupleTool( "TupleToolMCBackgroundInfo")
 
+tau_sequence.sequence().Members += [tuple]
 
-## Still have to add MC-match
+############################################################
+## D tuple
+############################################################
+
+if dataSample.isNormalization:
+    
+    DTuple = DecayTreeTuple('DTuple')
+    DTuple.Inputs = [ D_sequence.outputLocation() ]
+    DTuple.Decay = dec_D
+    DTuple.ToolList = ['TupleToolKinematic',
+                      'TupleToolEventInfo',
+                      'TupleToolTrackInfo',
+                      'TupleToolPid',
+                      'TupleToolGeometry', 
+                      'TupleToolAngles', # Helicity angle
+                      'TupleToolPropertime', #proper time TAU of reco particles
+                      ]
+
+    # Track isolation
+    DTuple.addTupleTool('TupleToolTrackIsolation/TrackIsolation')
+    DTuple.TrackIsolation.MinConeAngle = 0.5
+    DTuple.TrackIsolation.MaxConeAngle = 1.
+    DTuple.TrackIsolation.StepSize = 0.1
+
+    # Other event infos
+    DTuple.addTupleTool('LoKi::Hybrid::EvtTupleTool/LoKi_Evt')
+    DTuple.LoKi_Evt.VOID_Variables = {
+        "nSPDHits" :  " CONTAINS('Raw/Spd/Digits')  " ,
+        'nTracks' :  " CONTAINS ('Rec/Track/Best') "  ,
+        }
+
+    # Other variables
+    DTuple.addTupleTool('LoKi::Hybrid::TupleTool/LoKi_All')
+    DTuple.LoKi_All.Variables = {
+        'BPVIPCHI2' : 'BPVIPCHI2()',
+        'BPVDIRA' : 'BPVDIRA',
+        'BPVLTFITCHI2' : 'BPVLTFITCHI2()',
+        }
+
+    D_branches = {'D' : '[D- -> (phi(1020) -> K+ K-) pi-]CC', #automatically choose the head
+                'Phi' : '[D- -> ^(phi(1020) -> K+ K-) pi-]CC',
+                'KPlus' : '[D- -> (phi(1020) -> ^K+ K-) pi-]CC',
+                'KMinus' : '[D- -> (phi(1020) -> K+ ^K-) pi-]CC',
+                'Pi' : '[D- -> (phi(1020) -> K+ K-) ^pi-]CC'}
+
+    DTuple.addBranches(D_branches)
+
+
+    # Triggers:
+    #L0_list = ['L0HadronDecision', 'L0MuonDecision', 'L0DiMuonDecision']
+    L0_list = ['L0MuonDecision']
+    HLT1_list = ['Hlt1TrackAllL0Decision', 'Hlt1TrackMuonDecision']
+    HLT2_list = ['Hlt2CharmHadD2HHHDecision', 'Hlt2IncPhiDecision']
+    #HLT2_list = ['Hlt2CharmHadD2HHHDecision', 'Hlt2IncPhiDecision', 'Hlt2SingleMuonDecision', 'Hlt2CharmHadLambdaC2KPKDecision', 'Hlt2CharmHadLambdaC2KPPiDecision', 'Hlt2TopoMu3BodyBBDTDecision']
+
+    DTuple.D.addTupleTool('TupleToolTISTOS/TISTOS')
+    DTuple.D.TISTOS.VerboseL0   = True
+    DTuple.D.TISTOS.VerboseHlt1 = True
+    DTuple.D.TISTOS.VerboseHlt2 = True
+    DTuple.D.TISTOS.TriggerList = L0_list + HLT1_list + HLT2_list
+    
+    
+    if dataSample.isMC:
+        from Configurables import MCDecayTreeTuple, MCTupleToolKinematic, TupleToolMCTruth
+        DTuple.addTupleTool('TupleToolMCTruth/MCTruth')
+        DTuple.MCTruth.ToolList = ['MCTupleToolKinematic',
+                                  'MCTupleToolHierarchy',
+                                  ]
+        DTuple.D.addTupleTool( "TupleToolMCBackgroundInfo")
+
+    D_sequence.sequence().Members += [DTuple]
+
+############################################################
+## MC tuple
+############################################################
 
 if dataSample.isMC:
+
+    if 'tau2PhiMu' in dataSample.name:
+        MC_DecayDescriptor = '[tau- -> ^(phi(1020) -> ^K+ ^K-) ^mu-]CC'
+        MC_branches = {'Head' : '[tau- -> (phi(1020) -> K+ K-) mu-]CC', #automatically choose the head
+                       'Phi' : '[tau- -> ^(phi(1020) -> K+ K-) mu-]CC',
+                       'KPlus' : '[tau- -> (phi(1020) -> ^K+ K-) mu-]CC',
+                       'KMinus' : '[tau- -> (phi(1020) -> K+ ^K-) mu-]CC',
+                       'X' : '[tau- -> (phi(1020) -> K+ K-) ^mu-]CC'}
+        numbers_phi_X = [2,1]
+    elif 'D2PhiPi' in dataSample.name:
+        MC_DecayDescriptor = '[ D+ => ( ^(phi(1020) => ^K+ ^K- ) ) ^pi+  ]CC'
+        MC_branches = {'Head' : '[ D+ => ( (phi(1020) => K+ K- ) ) pi+  ]CC',
+                       'Phi' : '[ D+ => ( ^(phi(1020) => K+ K- ) ) pi+  ]CC',
+                       'KPlus' : '[ D+ => ( (phi(1020) => ^K+ K- ) ) pi+  ]CC',
+                       'KMinus' : '[ D+ => ( (phi(1020) => K+ ^K- ) ) pi+  ]CC',
+                       'X' : '[ D+ => ( (phi(1020) => K+ K- ) ) ^pi+  ]CC'}
+        numbers_phi_X = [2,1]
+    else:
+        MC_DecayDescriptor = '[ Xc => ( ^(phi(1020) => ^K+ ^K- ) ) ^X+ ^X0]CC'
+        MC_branches = {'Head' : '[ Xc => ( (phi(1020) => K+ K- ) ) X+ X0]CC',
+                       'Phi' : '[ Xc => ( ^(phi(1020) => K+ K- ) ) X+ X0]CC',
+                       'KPlus' : '[ Xc => ( (phi(1020) => ^K+ K- ) ) X+ X0]CC',
+                       'KMinus' : '[ Xc => ( (phi(1020) => K+ ^K- ) ) X+ X0]CC',
+                       'X' : '[ Xc => ( (phi(1020) => K+ K- ) ) ^X+ X0]CC',
+                       'X0' : '[ Xc => ( (phi(1020) => K+ K- ) ) X+ ^X0]CC'}
+        numbers_phi_X = [2,1]
+        
     mcTuple = MCDecayTreeTuple() # I can put as an argument a name if I use more than a MCDecayTreeTuple
-    #mcTuple.Inputs = [ tau_sequence.outputLocation() ]
+    mcTuple.Decay = MC_DecayDescriptor
     mcTuple.ToolList = ['MCTupleToolKinematic',
                         'TupleToolEventInfo',
                         'MCTupleToolHierarchy',
                       ]
-    mcTuple.addBranches(branches)
 
-    ## at a certain point add personalized leaves with LoKi::Hybrid::TupleTool
-    ## Still have to add triggers
+    mcTuple.addTupleTool("LoKi::Hybrid::MCTupleTool/LoKi_All")
+    mcTuple.LoKi_All.Variables =  {
+        'TRUEID' : 'MCID'
+        }
+    
+    mcTuple.addBranches(MC_branches)
 
-    mcTuple.Decay = dec
-    # if 'Ds2PhiMuNu' in dataSample.name:
-    #     mcTuple.Decay = dec = '[D_s- -> ^(phi(1020) -> ^K+ ^K-) ^mu- ^nu_mu~]CC'
-
+    mcTuple.Head.addTupleTool("LoKi::Hybrid::MCTupleTool/LoKi_Head")
+    mcTuple.Head.LoKi_Head.Preambulo = [
+        "from LoKiCore.math import sqrt",
+        "Phi_E  = MCCHILD(MCE,  {})".format(numbers_phi_X[0]),
+        "Phi_PX = MCCHILD(MCPX, {})".format(numbers_phi_X[0]),
+        "Phi_PY = MCCHILD(MCPY, {})".format(numbers_phi_X[0]),
+        "Phi_PZ = MCCHILD(MCPZ, {})".format(numbers_phi_X[0]),
+        "X_P  = MCCHILD(MCP,  {})".format(numbers_phi_X[1]),
+        "X_E_asMu  = sqrt(105.6583715**2 + X_P**2)",
+        "X_E_asPi  = sqrt(139.57018**2 + X_P**2)",
+        "X_PX = MCCHILD(MCPX, {})".format(numbers_phi_X[1]),
+        "X_PY = MCCHILD(MCPY, {})".format(numbers_phi_X[1]),
+        "X_PZ = MCCHILD(MCPZ, {})".format(numbers_phi_X[1]),
+        "PhiMu_M = sqrt( (Phi_E + X_E_asMu)**2 - (Phi_PX + X_PX)**2 - (Phi_PY + X_PY)**2 - (Phi_PZ + X_PZ)**2 )",
+        "PhiPi_M = sqrt( (Phi_E + X_E_asPi)**2 - (Phi_PX + X_PX)**2 - (Phi_PY + X_PY)**2 - (Phi_PZ + X_PZ)**2 )",
+        ]
+    mcTuple.Head.LoKi_Head.Variables =  {
+        'CHILD_1_ID' : "MCCHILD(MCID,1)",
+        'CHILD_2_ID' : "MCCHILD(MCID,2)",
+        'PhiMu_M' : 'PhiMu_M',
+        'PhiPi_M' : 'PhiPi_M',
+        }
 
 ############################################################
 
@@ -284,8 +460,11 @@ if dataSample.isMC: DaVinci().UserAlgorithms += [mcTuple]
 # tau_sequence.sequence().Members += [ mctree ] 
 ##################
 
-tau_sequence.sequence().Members += [tuple]
+
 DaVinci().appendToMainSequence( [ tau_sequence.sequence() ])
+if dataSample.isNormalization: DaVinci().appendToMainSequence( [ D_sequence.sequence() ])
+
+
 #DaVinci().UserAlgorithms += [tuple]
 
 #DaVinci().UserAlgorithms += [ strippingFilter, tau_sequence.sequence(), tuple]

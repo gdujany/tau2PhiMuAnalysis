@@ -6,6 +6,7 @@ if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser(description = 'Evaluate triger efficiency')
     parser.add_argument('-a','--all',help='recompute efficiencies running over ntuples',action='store_true')
+    parser.add_argument('-n', '--D2PhiPi',help='run on normalization sample instead of tau2PhiMu',action='store_true')
     parser.add_argument('--onData',help='run on data instead of MC',action='store_true')
     args = parser.parse_args()
 ##########################
@@ -20,9 +21,9 @@ from pyUtils import *
 
 
 # Triggers:
-L0_list = ['L0Global_TIS', 'L0Global_TOS', 'L0HadronDecision_TOS', 'L0MuonDecision_TOS', 'L0DiMuonDecision_TOS']
+L0_list = ['L0Global_TIS', 'L0MuonDecision_TOS'] #,'L0Global_TOS', 'L0HadronDecision_TOS', 'L0DiMuonDecision_TOS']
 HLT1_list = ['Hlt1TrackAllL0Decision_TOS', 'Hlt1TrackMuonDecision_TOS']
-HLT2_list = ['Hlt2CharmHadD2HHHDecision_TOS', 'Hlt2IncPhiDecision_TOS', 'Hlt2SingleMuonDecision_TOS', 'Hlt2CharmHadLambdaC2KPKDecision_TOS', 'Hlt2CharmHadLambdaC2KPPiDecision_TOS', 'Hlt2TopoMu3BodyBBDTDecision_TOS']
+HLT2_list = ['Hlt2CharmHadD2HHHDecision_TOS', 'Hlt2IncPhiDecision_TOS'] #, 'Hlt2SingleMuonDecision_TOS', 'Hlt2CharmHadLambdaC2KPKDecision_TOS', 'Hlt2CharmHadLambdaC2KPPiDecision_TOS', 'Hlt2TopoMu3BodyBBDTDecision_TOS']
 
 def get_counters(tree):
     '''
@@ -46,8 +47,7 @@ def get_counters(tree):
     counters['Total'] = nEvents
     for trigger in ('L0', 'HLT1', 'HLT2'):
         counters['Total_'+trigger] = 0
-    counters['my_L0'] = 0
-    counters['my_HLT2'] = 0
+    
     
     for cont, entrie in enumerate(tree):
         if cont == nEvents: break
@@ -57,9 +57,6 @@ def get_counters(tree):
         isPassedL0 = False
         for trigger in L0_list:
             exec 'if Tau_'+trigger+'[0]: counters[trigger] += 1; isPassedL0 = True'
-        if Tau_L0Global_TIS[0] or Tau_L0MuonDecision_TOS[0]:
-            counters['my_L0'] += 1
-            
 
         isPassedHLT1 = False
         if isPassedL0:
@@ -72,9 +69,7 @@ def get_counters(tree):
             counters['Total_HLT1'] += 1
             for trigger in HLT2_list:
                 exec 'if Tau_'+trigger+'[0]: counters[trigger] += 1; isPassedHLT2 = True'
-            if Tau_Hlt2IncPhiDecision_TOS[0] or Tau_Hlt2CharmHadD2HHHDecision_TOS[0]:
-                counters['my_HLT2'] += 1
-
+           
         if isPassedHLT2:
             counters['Total_HLT2'] += 1
 
@@ -91,14 +86,16 @@ def get_efficiencies(counters):
 
     efficiencies = {}
     
-    for trigger in L0_list + ['Total_L0', 'my_L0']:
+    for trigger in L0_list + ['Total_L0']:
         efficiencies[trigger] = Efficiency(N_gen=counters['Total'], N_sel=counters[trigger])
 
     for trigger in HLT1_list + ['Total_HLT1']:
         efficiencies[trigger] = Efficiency(N_gen=counters['Total_L0'], N_sel=counters[trigger])
 
-    for trigger in HLT2_list + ['Total_HLT2', 'my_HLT2']:
+    for trigger in HLT2_list + ['Total_HLT2']:
         efficiencies[trigger] = Efficiency(N_gen=counters['Total_HLT1'], N_sel=counters[trigger])
+
+    efficiencies['trigger'] = Efficiency(N_gen=counters['Total'], N_sel=counters['Total_HLT2'])
 
     return efficiencies
     
@@ -119,6 +116,9 @@ def printEfficiencies(efficiencies):
     for trigger in sorted([tr for tr in efficiencies if tr.startswith('Hlt2') or tr.endswith('HLT2')], key=lambda tr: efficiencies[tr].eff):
         printEff(efficiencies[trigger])
     print ''
+    trigger = 'Combined efficiency'
+    printEff(efficiencies["trigger"])
+    print ''
 
     
 
@@ -127,21 +127,21 @@ if __name__ == '__main__':
 
     import pickle
 
-    file_label = 'MC' #'data'
-    #file_label = 'data'
-
+    if args.onData:
+        file_label = 'data2012'
+    elif args.D2PhiPi:
+        file_label = 'D2PhiPi'
+    else:
+        file_label = 'tau2PhiMu'
+        
     if args.all:
-        if args.onData:
-            inFile_name = '/afs/cern.ch/user/g/gdujany/work/LHCb/LFV/store/data2012_triggerNotApplied.root'
-        else:
-         inFile_name = '/afs/cern.ch/user/g/gdujany/work/LHCb/LFV/store/tau2PhiMu_triggerNotApplied.root'
-
+     
+        inFile_name = '/afs/cern.ch/user/g/gdujany/work/LHCb/LFV/store/'+file_label+'_mixed.root'
         inFile = TFile(inFile_name)
         tree = inFile.Get('DecayTreeTuple/DecayTree')
 
         counters = get_counters(tree)
         pickle.dump(counters, open('pickles/trigger_conts_'+file_label+'.pkl','wb'))
-        ##counters = pickle.load(open('pickles/trigger_conts_'+file_label+'.pkl','rb'))
         efficiencies = get_efficiencies(counters)
         pickle.dump(efficiencies, open('pickles/trigger_effs_'+file_label+'.pkl','wb'))
 

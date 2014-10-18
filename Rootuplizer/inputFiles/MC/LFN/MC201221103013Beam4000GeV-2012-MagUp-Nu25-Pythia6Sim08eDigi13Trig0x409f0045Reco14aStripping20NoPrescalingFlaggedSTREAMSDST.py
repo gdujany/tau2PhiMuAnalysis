@@ -1,0 +1,20 @@
+#-- GAUDI jobOptions generated on Mon Sep 15 11:49:08 2014
+#-- Contains event types : 
+#--   21103013 - 10 files - 121646 events - 33.26 GBytes
+
+
+#--  Extra information about the data processing phases:
+
+from Gaudi.Configuration import * 
+from GaudiConf import IOHelper
+IOHelper('ROOT').inputFiles(['LFN:/lhcb/MC/2012/ALLSTREAMS.DST/00038373/0000/00038373_00000001_2.AllStreams.dst',
+'LFN:/lhcb/MC/2012/ALLSTREAMS.DST/00038373/0000/00038373_00000002_2.AllStreams.dst',
+'LFN:/lhcb/MC/2012/ALLSTREAMS.DST/00038373/0000/00038373_00000003_2.AllStreams.dst',
+'LFN:/lhcb/MC/2012/ALLSTREAMS.DST/00038373/0000/00038373_00000004_2.AllStreams.dst',
+'LFN:/lhcb/MC/2012/ALLSTREAMS.DST/00038373/0000/00038373_00000005_2.AllStreams.dst',
+'LFN:/lhcb/MC/2012/ALLSTREAMS.DST/00038373/0000/00038373_00000006_2.AllStreams.dst',
+'LFN:/lhcb/MC/2012/ALLSTREAMS.DST/00038373/0000/00038373_00000007_2.AllStreams.dst',
+'LFN:/lhcb/MC/2012/ALLSTREAMS.DST/00038373/0000/00038373_00000008_2.AllStreams.dst',
+'LFN:/lhcb/MC/2012/ALLSTREAMS.DST/00038373/0000/00038373_00000009_2.AllStreams.dst',
+'LFN:/lhcb/MC/2012/ALLSTREAMS.DST/00038373/0000/00038373_00000010_2.AllStreams.dst'
+], clear=True)

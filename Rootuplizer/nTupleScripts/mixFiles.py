@@ -3,20 +3,14 @@ import os
 
 from ROOT import TChain, TTree, TFile
 
-frac_dict = {'tau2PhiMuFromPD': 0.6212705033179445, 'tau2PhiMuFromBD': 0.023306318907189004, 'tau2PhiMuFromBDs': 0.9620888091312731, 'tau2PhiMuFromB': 1.0, 'tau2PhiMuFromPDs': 0.9596286149718892}
-
-# frac_dict = dict(
-#     tau2PhiMuFromPDs = 0.960,
-#     tau2PhiMuFromBDs = 0.962,
-#     # tau2PhiMuFromPD = 0.621,
-#     # tau2PhiMuFromBD = 0.023,
-#     # tau2PhiMuFromB = 1.,
-#     )
-
-
 store_dir = '/afs/cern.ch/user/g/gdujany/work/LHCb/LFV/store/'
-outFile_name = store_dir+'tau2PhiMu.root'
-#outFile_name = 'lalla.root'
+
+# frac_dict = {'tau2PhiMuFromPD': 0.6212705033179445, 'tau2PhiMuFromBD': 0.023306318907189004, 'tau2PhiMuFromBDs': 0.9620888091312731, 'tau2PhiMuFromB': 1.0, 'tau2PhiMuFromPDs': 0.9596286149718892}
+# outFile_name = store_dir+'tau2PhiMu_mixed.root'
+
+frac_dict = {'D2PhiPiFromD': 1.0, 'D2PhiPiFromB': 0.7541922463907248}
+outFile_name = store_dir+'D2PhiPi_mixed.root'
+
 
 os.chdir(store_dir)
 

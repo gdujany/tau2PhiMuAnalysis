@@ -57,7 +57,7 @@ if __name__ == '__main__':
 
     # dataFile_name = '/afs/cern.ch/user/g/gdujany/work/LHCb/LFV/store/data2012_triggerNotApplied.root'
     # MCFile_name = '/afs/cern.ch/user/g/gdujany/work/LHCb/LFV/store/tau2PhiMu_triggerNotApplied.root'
-    dataFile_name = '/afs/cern.ch/user/g/gdujany/work/LHCb/LFV/store/data2012.root'
+    dataFile_name = '/afs/cern.ch/user/ggre/gdujany/work/LHCb/LFV/store/data2012.root'
     MCFile_name = '/afs/cern.ch/user/g/gdujany/work/LHCb/LFV/store/tau2PhiMu.root'
     dataFile = r.TFile(dataFile_name)
     MCFile = r.TFile(MCFile_name)
